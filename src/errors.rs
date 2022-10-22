@@ -1,12 +1,12 @@
 #[derive(Debug)]
 pub enum AuthError {
-    JwtError(String),
-    FetchError(String),
-    BearerTokenError(BearerTokenErrorReason),
+    InvalidJwt(String),
+    FetchFailed(String),
+    InvalidBearerToken(InvalidReason),
 }
 
 #[derive(Debug)]
-pub enum BearerTokenErrorReason {
+pub enum InvalidReason {
     BadCount,
     Missing,
     Invalid,
@@ -14,12 +14,12 @@ pub enum BearerTokenErrorReason {
 
 impl From<jsonwebtoken::errors::Error> for AuthError {
     fn from(e: jsonwebtoken::errors::Error) -> Self {
-        AuthError::JwtError(format!("Auth error occurred: {:?}", e))
+        AuthError::InvalidJwt(format!("Auth error occurred: {:?}", e))
     }
 }
 
 impl From<reqwest::Error> for AuthError {
     fn from(e: reqwest::Error) -> Self {
-        AuthError::FetchError(format!("Auth error occurred: {:?}", e))
+        AuthError::FetchFailed(format!("Auth error occurred: {:?}", e))
     }
 }

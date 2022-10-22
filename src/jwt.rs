@@ -9,7 +9,7 @@ use jsonwebtoken::{
     Validation,
 };
 
-use crate::{errors::AuthError, jwk::get_jwks, FirebaseConfig, Jwt};
+use crate::{errors::AuthError, jwk::jwks, FirebaseAdmin, Jwt};
 
 fn build_validation(project_id: &str) -> Validation {
     let mut validation = Validation::new(Algorithm::RS256);
@@ -43,21 +43,20 @@ impl Jwt {
 
         EncodingKey::from_rsa_pem(str::as_bytes(&private_key))
             .and_then(|key| {
-                let claims = Self::new(audience, uid);
-                jsonwebtoken::encode(&header, &claims, &key)
+                jsonwebtoken::encode(&header, &Self::new(audience, uid), &key)
             })
             .map_err(AuthError::from)
     }
 
     pub async fn verify(
         token: &str,
-        firebase_config: &FirebaseConfig,
+        firebase_config: &FirebaseAdmin,
         jwks_url: &str,
     ) -> Result<jsonwebtoken::TokenData<Jwt>, AuthError> {
         let kid = decode_header(token).map_err(AuthError::from).and_then(
             |header| {
                 header.kid.ok_or_else(|| {
-                    AuthError::JwtError(format!(
+                    AuthError::InvalidJwt(format!(
                         "{:?}",
                         ErrorKind::InvalidToken
                     ))
@@ -65,18 +64,21 @@ impl Jwt {
             },
         )?;
 
-        let jwk = get_jwks(jwks_url).await.map_err(AuthError::from).and_then(
+        let jwk = jwks(jwks_url).await.map_err(AuthError::from).and_then(
             |mut key_map| {
                 key_map.remove(&kid).ok_or_else(|| {
-                    AuthError::JwtError("Missing Jwk".to_string())
+                    AuthError::InvalidJwt("Missing Jwk".to_string())
                 })
             },
         )?;
 
         DecodingKey::from_rsa_components(&jwk.n, &jwk.e)
             .and_then(|key| {
-                let validation = build_validation(&firebase_config.project_id);
-                jsonwebtoken::decode::<Jwt>(token, &key, &validation)
+                jsonwebtoken::decode::<Jwt>(
+                    token,
+                    &key,
+                    &build_validation(&firebase_config.project_id),
+                )
             })
             .map_err(AuthError::from)
     }

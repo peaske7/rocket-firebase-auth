@@ -1,11 +1,14 @@
-use crate::{errors::AuthError::BearerTokenError, BearerToken};
+use crate::{
+    errors::{AuthError, InvalidReason},
+    BearerToken,
+};
 use rocket::{http::Status, outcome, request, Request};
 
-fn get_bearer_token(header: &str) -> BearerToken {
+fn bearer_token(header: &str) -> BearerToken {
     if header.len() >= 7 {
         BearerToken(header.to_string()[7..].to_string())
     } else {
-        BearerToken("".to_string())
+        BearerToken(String::default())
     }
 }
 
@@ -16,31 +19,30 @@ fn is_valid_header(header: &str) -> bool {
 
 #[rocket::async_trait]
 impl<'r> request::FromRequest<'r> for BearerToken {
-    type Error = BearerTokenError;
+    type Error = AuthError;
 
     async fn from_request(
         request: &'r Request<'_>,
     ) -> request::Outcome<Self, Self::Error> {
-        let auth_headers = request
+        match request
             .headers()
             .get("Authorization")
-            .collect::<Vec<&str>>();
-
-        match auth_headers.len() {
-            0 => outcome::Outcome::Failure((
+            .collect::<Vec<&str>>()
+        {
+            ah if ah.is_empty() => outcome::Outcome::Failure((
                 Status::BadRequest,
-                BearerTokenError::Missing,
+                AuthError::InvalidBearerToken(InvalidReason::Missing),
             )),
-            1 if is_valid_header(auth_headers[0]) => {
-                outcome::Outcome::Success(get_bearer_token(auth_headers[0]))
+            ah if ah.len() == 1 && is_valid_header(ah[0]) => {
+                outcome::Outcome::Success(bearer_token(ah[0]))
             }
-            1 => outcome::Outcome::Failure((
+            ah if ah.len() == 1 => outcome::Outcome::Failure((
                 Status::BadRequest,
-                BearerTokenError::Invalid,
+                AuthError::InvalidBearerToken(InvalidReason::Invalid),
             )),
             _ => outcome::Outcome::Failure((
                 Status::BadRequest,
-                BearerTokenError::BadCount,
+                AuthError::InvalidBearerToken(InvalidReason::BadCount),
             )),
         }
     }
