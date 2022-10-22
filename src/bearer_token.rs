@@ -1,5 +1,5 @@
-use rocket::{request, outcome, Request, http::Status};
-use crate::{BearerToken, errors::AuthError::BearerTokenError};
+use crate::{errors::AuthError::BearerTokenError, BearerToken};
+use rocket::{http::Status, outcome, request, Request};
 
 fn get_bearer_token(header: &str) -> BearerToken {
     if header.len() >= 7 {

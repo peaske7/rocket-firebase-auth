@@ -9,7 +9,7 @@ use jsonwebtoken::{
     Validation,
 };
 
-use crate::{errors::AuthError, FirebaseConfig, Jwt, jwk::get_jwks};
+use crate::{errors::AuthError, jwk::get_jwks, FirebaseConfig, Jwt};
 
 fn build_validation(project_id: &str) -> Validation {
     let mut validation = Validation::new(Algorithm::RS256);
@@ -65,14 +65,13 @@ impl Jwt {
             },
         )?;
 
-        let jwk = get_jwks(jwks_url)
-            .await
-            .map_err(AuthError::from)
-            .and_then(|mut key_map| {
+        let jwk = get_jwks(jwks_url).await.map_err(AuthError::from).and_then(
+            |mut key_map| {
                 key_map.remove(&kid).ok_or_else(|| {
                     AuthError::JwtError("Missing Jwk".to_string())
                 })
-            })?;
+            },
+        )?;
 
         DecodingKey::from_rsa_components(&jwk.n, &jwk.e)
             .and_then(|key| {

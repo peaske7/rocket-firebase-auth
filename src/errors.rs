@@ -2,7 +2,7 @@
 pub enum AuthError {
     JwtError(String),
     FetchError(String),
-    BearerTokenError(BearerTokenErrorReason)
+    BearerTokenError(BearerTokenErrorReason),
 }
 
 #[derive(Debug)]
@@ -23,4 +23,3 @@ impl From<reqwest::Error> for AuthError {
         AuthError::FetchError(format!("Auth error occurred: {:?}", e))
     }
 }
-

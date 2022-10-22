@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
-use futures::TryFutureExt;
 use crate::{Jwk, KeysResponse};
+use futures::TryFutureExt;
 
 pub async fn get_jwks(
     jwks_url: &str,

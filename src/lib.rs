@@ -1,7 +1,7 @@
-mod jwt;
-mod jwk;
-mod errors;
 mod bearer_token;
+mod errors;
+mod jwk;
+mod jwt;
 
 use rocket::{
     http::Status,
@@ -15,29 +15,28 @@ use serde::{Deserialize, Serialize};
 pub static FIREBASE_AUTHENTICATION_AUDIENCE: &str =
     "https://identitytoolkit.googleapis.com/google.identity.identitytoolkit.v1.IdentityToolkit";
 
-
 #[derive(Clone, Debug, Deserialize)]
 pub struct FirebaseAuth {
     firebase_config: FirebaseConfig,
-    jwks_url: String,
+    jwks_url:        String,
 }
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct FirebaseConfig {
-    pub project_id: String,
+    pub project_id:     String,
     pub private_key_id: String,
-    pub private_key: String,
-    pub client_email: String,
-    pub client_id: String,
+    pub private_key:    String,
+    pub client_email:   String,
+    pub client_id:      String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq)]
 pub struct Jwk {
-    pub e: String,
+    pub e:   String,
     pub alg: String,
     pub kty: String,
     pub kid: String,
-    pub n: String,
+    pub n:   String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -66,4 +65,3 @@ pub fn create_custom_token(uid: &str) -> Result<String, AuthError> {
 
 #[derive(Debug)]
 pub struct BearerToken(pub String);
-
