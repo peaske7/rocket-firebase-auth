@@ -1,0 +1,7 @@
+# Rust build files
+/target
+/Cargo.lock
+
+# IDE related files
+/.idea
+rocket-firebase-auth.iml
