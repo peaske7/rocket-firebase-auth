@@ -9,7 +9,7 @@ use jsonwebtoken::{
     Validation,
 };
 
-use crate::{errors::AuthError, jwk::jwks, FirebaseAdmin, Jwt};
+use crate::{errors::AuthError, jwk::jwks, FirebaseAuth, Jwt};
 
 fn build_validation(project_id: &str) -> Validation {
     let mut validation = Validation::new(Algorithm::RS256);
@@ -50,8 +50,7 @@ impl Jwt {
 
     pub async fn verify(
         token: &str,
-        firebase_config: &FirebaseAdmin,
-        jwks_url: &str,
+        firebase_auth: &FirebaseAuth,
     ) -> Result<jsonwebtoken::TokenData<Jwt>, AuthError> {
         let kid = decode_header(token).map_err(AuthError::from).and_then(
             |header| {
@@ -64,20 +63,21 @@ impl Jwt {
             },
         )?;
 
-        let jwk = jwks(jwks_url).await.map_err(AuthError::from).and_then(
-            |mut key_map| {
+        let jwk = jwks(&firebase_auth.jwks_url)
+            .await
+            .map_err(AuthError::from)
+            .and_then(|mut key_map| {
                 key_map.remove(&kid).ok_or_else(|| {
                     AuthError::InvalidJwt("Missing Jwk".to_string())
                 })
-            },
-        )?;
+            })?;
 
         DecodingKey::from_rsa_components(&jwk.n, &jwk.e)
             .and_then(|key| {
                 jsonwebtoken::decode::<Jwt>(
                     token,
                     &key,
-                    &build_validation(&firebase_config.project_id),
+                    &build_validation(&firebase_auth.firebase_admin.project_id),
                 )
             })
             .map_err(AuthError::from)

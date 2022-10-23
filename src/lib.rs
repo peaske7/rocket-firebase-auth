@@ -10,8 +10,17 @@ pub static FIREBASE_AUTHENTICATION_AUDIENCE: &str =
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct FirebaseAuth {
-    firebase_admin: FirebaseAdmin,
-    jwks_url:       String,
+    pub firebase_admin: FirebaseAdmin,
+    pub jwks_url:       String,
+}
+
+impl FirebaseAuth {
+    pub fn new(firebase_admin: FirebaseAdmin, jwks_url: String) -> Self {
+        FirebaseAuth {
+            firebase_admin,
+            jwks_url,
+        }
+    }
 }
 
 #[derive(Clone, Debug, Deserialize)]
