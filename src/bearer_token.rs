@@ -1,8 +1,8 @@
-use crate::{
-    errors::{AuthError, InvalidReason},
-    BearerToken,
-};
+use crate::errors::{AuthError, InvalidReason};
 use rocket::{http::Status, outcome, request, Request};
+
+#[derive(Debug)]
+pub struct BearerToken(pub String);
 
 fn bearer_token(header: &str) -> BearerToken {
     if header.len() >= 7 {
