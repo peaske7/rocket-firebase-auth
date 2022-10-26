@@ -11,7 +11,7 @@ use jsonwebtoken::{
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    errors::AuthError,
+    errors::{AuthError, InvalidJwt},
     firebase_auth::FirebaseAuth,
     jwk::{jwks, Kid},
 };
@@ -110,17 +110,18 @@ impl Jwt {
     ) -> Result<DecodedToken, AuthError> {
         let kid = decode_header(token).map_err(AuthError::from).and_then(
             |header| {
-                header.kid.map(Kid).ok_or_else(|| {
-                    AuthError::InvalidJwt("Missing kid".to_string())
-                })
+                header
+                    .kid
+                    .map(Kid)
+                    .ok_or(AuthError::InvalidJwt(InvalidJwt::MissingKid))
             },
         )?;
 
         let jwk = jwks(&firebase_auth.jwks_url)
             .and_then(|mut key_map| async move {
-                key_map.remove(&kid).ok_or_else(|| {
-                    AuthError::InvalidJwt("Missing Jwk".to_string())
-                })
+                key_map
+                    .remove(&kid)
+                    .ok_or(AuthError::InvalidJwt(InvalidJwt::MissingJwk))
             })
             .await?;
 

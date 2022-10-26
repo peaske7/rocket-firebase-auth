@@ -2,11 +2,21 @@
 #[derive(Debug)]
 pub enum AuthError {
     /// Invalid JWT given
-    InvalidJwt(String),
+    InvalidJwt(InvalidJwt),
     /// Fail to fetch list of JWKs from issuer
     FetchFailed(String),
     /// Invalid Authorization header in request
     InvalidAuthHeader(InvalidAuthHeader),
+    /// jsonwebtoken errors
+    JsonWebTokenError(String),
+}
+
+#[derive(Debug, Copy, Clone)]
+pub enum InvalidJwt {
+    /// Kid is missing
+    MissingKid,
+    /// Jwk for a Kid could not be found
+    MissingJwk,
 }
 
 #[derive(Debug)]
@@ -25,12 +35,12 @@ pub enum InvalidAuthHeader {
 
 impl From<jsonwebtoken::errors::Error> for AuthError {
     fn from(e: jsonwebtoken::errors::Error) -> Self {
-        AuthError::InvalidJwt(format!("Auth error occurred: {:?}", e))
+        AuthError::JsonWebTokenError(format!("Auth error occurred: {e}"))
     }
 }
 
 impl From<reqwest::Error> for AuthError {
     fn from(e: reqwest::Error) -> Self {
-        AuthError::FetchFailed(format!("Auth error occurred: {:?}", e))
+        AuthError::FetchFailed(format!("Auth error occurred: {e}"))
     }
 }

@@ -11,6 +11,9 @@ license = "MIT"
 readme = "README.md"
 keywords = ["firebase", "rocket", "jsonwebtokens"]
 
+[lib]
+path = "src/lib.rs"
+
 [dependencies]
 jsonwebtoken = { version= "8.1.1", features = ["use_pem"] }
 futures = "0.3.21"

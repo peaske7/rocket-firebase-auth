@@ -6,7 +6,7 @@ use std::convert::TryFrom;
 ///
 /// Valid requests with the `Authorization` header included should look
 /// like the following:
-/// ```
+/// ```ignore
 /// Authorization: Bearer <some_bearer_token>
 /// ```
 #[derive(Debug)]
@@ -24,7 +24,9 @@ impl TryFrom<&str> for BearerToken {
                 )),
             parts if parts.len() != 2 =>
                 Err(AuthError::InvalidAuthHeader(InvalidAuthHeader::InvalidFormat(
-                    "Authorization Header should have 2 arguments formatted as `Bearer <token>`. Number of arguments did not match the number of arguments expected.".to_string()
+                    "Authorization Header should have 2 arguments formatted as \
+                    `Bearer <token>`. Number of arguments did not match the \
+                    number of arguments expected.".to_string()
                 ))),
             parts if parts[1].len() > 1 =>
                 Err(AuthError::InvalidAuthHeader(
