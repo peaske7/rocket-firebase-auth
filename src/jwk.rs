@@ -7,15 +7,15 @@ use serde::{Deserialize, Serialize};
 /// Represents the Jwk contents that is returned from Google's JWKs endpoint
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Jwk {
-    // Base64 URL encoded string, public exponent
+    /// Base64 URL encoded string, public exponent
     pub e:   String,
-    // The algorithm used. In Firebase's case, RS256
+    /// The algorithm used. In Firebase's case, RS256
     pub alg: String,
-    // Key type. In Firebase's case, RSA
+    /// Key type. In Firebase's case, RSA
     pub kty: String,
-    // Key ID. Used to match to specific key in JWKs
+    /// Key ID. Used to match to specific key in JWKs
     pub kid: String,
-    // Base64 URL encoded string, modulus
+    /// Base64 URL encoded string, modulus
     pub n:   String,
 }
 

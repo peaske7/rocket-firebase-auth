@@ -2,10 +2,9 @@ use once_cell::sync::Lazy;
 use rocket::serde::json::serde_json::json;
 use rocket_firebase_auth::{
     errors::AuthError,
+    firebase_auth::{FirebaseAdmin, FirebaseAuth},
     jwk::{Jwk, KeysResponse},
     jwt::Jwt,
-    FirebaseAdmin,
-    FirebaseAuth,
 };
 use serde::Deserialize;
 use std::{collections::HashMap, fs};
@@ -37,6 +36,7 @@ static SCENARIOS: Lazy<HashMap<String, Scenario>> = Lazy::new(|| {
         .expect("Failed to fold file contents into a hashmap")
 });
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, Deserialize)]
 struct Scenario {
     pub desc:            Option<String>,

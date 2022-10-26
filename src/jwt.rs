@@ -12,10 +12,11 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     errors::AuthError,
+    firebase_auth::FirebaseAuth,
     jwk::{jwks, Kid},
-    FirebaseAuth,
 };
 
+/// The claims of a decoded JWT token used in firebase
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Jwt {
     pub aud: String,
@@ -24,15 +25,18 @@ pub struct Jwt {
     pub sub: String,
 }
 
+/// String representation of an encoded JWT token
 #[derive(Debug)]
 pub struct EncodedToken(pub String);
 
+/// A representation of a decoded JWT token
 #[derive(Debug)]
 pub struct DecodedToken {
     pub header: Header,
     pub claims: Jwt,
 }
 
+/// Create a validator used for decoding JWT tokens, provided by jsonwebtokens
 fn build_validation(project_id: &str) -> Validation {
     let mut validation = Validation::new(Algorithm::RS256);
     validation.set_issuer(&[format!(
@@ -44,9 +48,10 @@ fn build_validation(project_id: &str) -> Validation {
 }
 
 impl Jwt {
+    /// Creates a new Jwt struct.
     pub fn new(uid: &str, audience: &str) -> Self {
         let iat = Utc::now().timestamp() as u64;
-        Jwt {
+        Self {
             aud: audience.to_string(),
             iat,
             exp: iat + (60 * 60),
@@ -54,6 +59,7 @@ impl Jwt {
         }
     }
 
+    /// Creates a new encoded token
     pub fn encode(
         uid: &str,
         firebase_auth: &FirebaseAuth,
@@ -87,7 +93,7 @@ impl Jwt {
     /// ```rust
     /// use rocket_firebase_auth::{
     ///     jwt::{ Jwt, DecodedToken },
-    ///     FirebaseAuth,
+    ///     firebase_auth::FirebaseAuth,
     ///     errors::AuthError
     /// };
     ///

@@ -1,22 +1,42 @@
-use crate::errors::{AuthError, InvalidReason};
-use rocket::{http::Status, outcome, request, Request};
+use crate::errors::{AuthError, InvalidAuthHeader};
+use rocket::{http::Status, outcome, outcome::IntoOutcome, request, Request};
+use std::convert::TryFrom;
 
+/// The bearer token included in request headers
+///
+/// Valid requests with the `Authorization` header included should look
+/// like the following:
+/// ```
+/// Authorization: Bearer <some_bearer_token>
+/// ```
 #[derive(Debug)]
 pub struct BearerToken(pub String);
 
-fn bearer_token(header: &str) -> BearerToken {
-    if header.len() >= 7 {
-        BearerToken(header.to_string()[7..].to_string())
-    } else {
-        BearerToken(String::default())
+/// Try to convert an Authorization headers to a valid bearer token
+impl TryFrom<&str> for BearerToken {
+    type Error = AuthError;
+
+    fn try_from(header: &str) -> Result<Self, Self::Error> {
+        match header.trim().split(' ').collect::<Vec<&str>>() {
+            parts if parts[0].to_lowercase() != "bearer" =>
+                Err(AuthError::InvalidAuthHeader(
+                    InvalidAuthHeader::MissingBearer,
+                )),
+            parts if parts.len() != 2 =>
+                Err(AuthError::InvalidAuthHeader(InvalidAuthHeader::InvalidFormat(
+                    "Authorization Header should have 2 arguments formatted as `Bearer <token>`. Number of arguments did not match the number of arguments expected.".to_string()
+                ))),
+            parts if parts[1].len() > 1 =>
+                Err(AuthError::InvalidAuthHeader(
+                    InvalidAuthHeader::MissingBearerValue,
+                )),
+            parts  =>
+                Ok(BearerToken(parts[1].to_string()))
+        }
     }
 }
 
-fn is_valid_header(header: &str) -> bool {
-    let parts = header.trim().split(' ').collect::<Vec<&str>>();
-    parts.len() == 2 && parts[0] == "Bearer" && parts[1].len() > 1
-}
-
+/// Allows for direct access to bearer tokens as function parameters in rocket
 #[rocket::async_trait]
 impl<'r> request::FromRequest<'r> for BearerToken {
     type Error = AuthError;
@@ -29,20 +49,18 @@ impl<'r> request::FromRequest<'r> for BearerToken {
             .get("Authorization")
             .collect::<Vec<&str>>()
         {
-            ah if ah.is_empty() => outcome::Outcome::Failure((
+            auth_field if auth_field.is_empty() => outcome::Outcome::Failure((
                 Status::BadRequest,
-                AuthError::InvalidBearerToken(InvalidReason::Missing),
+                AuthError::InvalidAuthHeader(
+                    InvalidAuthHeader::MissingAuthHeader,
+                ),
             )),
-            ah if ah.len() == 1 && is_valid_header(ah[0]) => {
-                outcome::Outcome::Success(bearer_token(ah[0]))
+            auth_field if auth_field.len() == 1 => {
+                auth_field[0].try_into().into_outcome(Status::BadRequest)
             }
-            ah if ah.len() == 1 => outcome::Outcome::Failure((
-                Status::BadRequest,
-                AuthError::InvalidBearerToken(InvalidReason::Invalid),
-            )),
             _ => outcome::Outcome::Failure((
                 Status::BadRequest,
-                AuthError::InvalidBearerToken(InvalidReason::BadCount),
+                AuthError::InvalidAuthHeader(InvalidAuthHeader::BadCount),
             )),
         }
     }
