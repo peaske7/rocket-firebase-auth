@@ -4,16 +4,22 @@ use crate::errors::AuthError;
 use futures::TryFutureExt;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Serialize, Deserialize)]
+/// Represents the Jwk contents that is returned from Google's JWKs endpoint
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Jwk {
+    // Base64 URL encoded string, public exponent
     pub e:   String,
+    // The algorithm used. In Firebase's case, RS256
     pub alg: String,
+    // Key type. In Firebase's case, RSA
     pub kty: String,
+    // Key ID. Used to match to specific key in JWKs
     pub kid: String,
+    // Base64 URL encoded string, modulus
     pub n:   String,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct KeysResponse {
     pub keys: Vec<Jwk>,
 }

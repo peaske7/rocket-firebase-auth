@@ -4,9 +4,15 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-jsonwebtoken = "8.1.1"
+jsonwebtoken = { version= "8.1.1", features = ["use_pem"] }
 futures = "0.3.21"
 serde = "1.0.138"
 reqwest = { version = "0.11.11", features = ["json"] }
 chrono = { version = "0.4", features = ["serde"] }
 rocket = { version = "0.5.0-rc.1", features = ["json"] }
+
+[dev-dependencies]
+wiremock = "0.5.14"
+tokio = { version = "1.21.2", features = ["full"] }
+toml = "0.5.9"
+once_cell = "1.15.0"

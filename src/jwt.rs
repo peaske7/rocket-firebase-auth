@@ -2,7 +2,6 @@ use chrono::Utc;
 use futures::TryFutureExt;
 use jsonwebtoken::{
     decode_header,
-    errors::ErrorKind,
     Algorithm,
     DecodingKey,
     EncodingKey,
@@ -106,10 +105,7 @@ impl Jwt {
         let kid = decode_header(token).map_err(AuthError::from).and_then(
             |header| {
                 header.kid.map(Kid).ok_or_else(|| {
-                    AuthError::InvalidJwt(format!(
-                        "{:?}",
-                        ErrorKind::InvalidToken
-                    ))
+                    AuthError::InvalidJwt("Missing kid".to_string())
                 })
             },
         )?;
