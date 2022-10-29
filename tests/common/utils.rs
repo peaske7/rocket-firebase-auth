@@ -1,9 +1,6 @@
 use once_cell::sync::Lazy;
 use rocket::serde::json::serde_json::json;
-use rocket_firebase_auth::{
-    firebase_auth::{Credentials, FirebaseAuth},
-    jwk::{Jwk, KeysResponse},
-};
+use rocket_firebase_auth::jwk::{Jwk, KeysResponse};
 use serde::Deserialize;
 use std::{collections::HashMap, fs};
 use wiremock::{
@@ -43,16 +40,6 @@ pub struct Scenario {
     pub kid:             String,
     pub rsa_public_key:  Option<String>,
     pub rsa_private_key: Option<String>,
-}
-
-pub fn firebase_auth() -> FirebaseAuth {
-    FirebaseAuth::new(Credentials {
-        project_id:     "".to_string(),
-        private_key_id: "".to_string(),
-        private_key:    "".to_string(),
-        client_email:   "".to_string(),
-        client_id:      "".to_string(),
-    })
 }
 
 pub async fn setup_mock_server() -> MockServer {

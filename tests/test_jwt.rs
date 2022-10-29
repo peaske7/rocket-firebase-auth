@@ -1,20 +1,16 @@
 mod common;
 
-use crate::common::utils::{
-    firebase_auth,
-    load_scenario,
-    mock_jwk_issuer,
-    setup_mock_server,
-};
+use crate::common::utils::{load_scenario, mock_jwk_issuer, setup_mock_server};
 use rocket_firebase_auth::{
     errors::{AuthError, InvalidJwt},
+    firebase_auth::FirebaseAuth,
     jwt::Jwt,
 };
 
 #[tokio::test]
 async fn missing_kid() {
     let token_without_kid = load_scenario("missing_kid").token;
-    let firebase_auth = firebase_auth();
+    let firebase_auth = FirebaseAuth::default();
     let decoded_token = Jwt::verify(&token_without_kid, &firebase_auth).await;
 
     assert!(decoded_token.is_err());
@@ -36,7 +32,7 @@ async fn missing_jwk() {
         .mount(&mock_server)
         .await;
 
-    let firebase_auth = firebase_auth();
+    let firebase_auth = FirebaseAuth::default();
     let decoded_token = Jwt::verify_with_jwks_url(
         &scenario.token,
         "http://localhost:8888/jwks_url",

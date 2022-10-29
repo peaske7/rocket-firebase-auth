@@ -3,13 +3,11 @@
 #[cfg(feature = "encode")]
 use chrono::Utc;
 use futures::TryFutureExt;
+use jsonwebtoken::{decode_header, Algorithm, DecodingKey, Validation};
 #[cfg(feature = "encode")]
-use jsonwebtoken::EncodingKey;
-use jsonwebtoken::{decode_header, Algorithm, DecodingKey, Header, Validation};
+use jsonwebtoken::{EncodingKey, Header};
 use serde::{Deserialize, Serialize};
 
-#[cfg(feature = "encode")]
-use crate::firebase_auth::AUD_URL;
 use crate::{
     errors::{AuthError, InvalidJwt},
     firebase_auth::{FirebaseAuth, JWKS_URL},
@@ -30,11 +28,22 @@ pub struct Jwt {
 #[derive(Debug)]
 pub struct EncodedToken(pub String);
 
-/// A representation of a decoded JWT token
+/// The decoded Firebase JWT token with fields renamed to match Firebase's
+/// mapped values.
+///
+/// ```txt
+/// jwt.claims.iat => decoded_token.issued_at
+/// jwt.claims.exp => decoded_token.expires_at
+/// jwt.claims.sub => decoded_token.uid
+/// ```
 #[derive(Debug)]
 pub struct DecodedToken {
-    pub header: Header,
-    pub claims: Jwt,
+    /// Time the token was issued at in UNIX epoch. Must be in the past
+    pub issued_at:  u64,
+    /// Time the token is set to expire in UNIX epoch. Must be in the future.
+    pub expires_at: u64,
+    /// User ID issued by Firebase
+    pub uid:        String,
 }
 
 /// Create a validator used for decoding JWT tokens, provided by jsonwebtokens
@@ -49,12 +58,15 @@ fn build_validation(project_id: &str) -> Validation {
 }
 
 impl Jwt {
-    /// Creates a new Jwt struct.
+    /// Creates a new Jwt token
+    ///
+    /// The new token is created with a given Firebase `uid` and `project_id`.
+    ///
     #[cfg(feature = "encode")]
-    pub fn new(uid: &str) -> Self {
+    pub fn new(uid: &str, project_id: &str) -> Self {
         let iat = Utc::now().timestamp() as u64;
         Self {
-            aud: AUD_URL.to_string(),
+            aud: project_id.to_string(),
             iat,
             exp: iat + (60 * 60),
             sub: uid.to_string(),
@@ -73,7 +85,13 @@ impl Jwt {
         EncodingKey::from_rsa_pem(
             firebase_auth.credentials.private_key.as_bytes(),
         )
-        .and_then(|key| jsonwebtoken::encode(&header, &Jwt::new(uid), &key))
+        .and_then(|key| {
+            jsonwebtoken::encode(
+                &header,
+                &Jwt::new(uid, &firebase_auth.credentials.project_id),
+                &key,
+            )
+        })
         .map(EncodedToken)
         .map_err(AuthError::from)
     }
@@ -139,8 +157,9 @@ impl Jwt {
                 )
             })
             .map(|token_data| DecodedToken {
-                header: token_data.header,
-                claims: token_data.claims,
+                issued_at:  token_data.claims.iat,
+                expires_at: token_data.claims.exp,
+                uid:        token_data.claims.sub,
             })
             .map_err(AuthError::from)
     }

@@ -11,7 +11,7 @@ pub enum AuthError {
     InvalidAuthHeader(InvalidAuthHeader),
     /// jsonwebtoken errors
     JsonWebTokenError(String),
-    #[cfg(feature = "dotenv")]
+    #[cfg(feature = "env")]
     /// Failures related to reading from environment variables
     Env(Env),
 }
