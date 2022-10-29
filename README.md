@@ -6,59 +6,72 @@
 
 Firebase Auth with Rocket, batteries included
 
+- __Tiny__: `rocket-firebase-auth` is tiny, with features allowing you to make it even tinier
+- __Does one thing well__: Encodes/decodes Firebase JWT tokens in Rocket apps, and that's it
+
 ## Getting started
 
 #### 1. Set Firebase service account keys as env variables
 
-If you haven't already, create a service account for the Rocket server you are
-adding firebase to. Generate a new private key and copy paste the generated json
-into a `.env` file.
+If you haven't already, create a service account in Firebase for the Rocket backend
+you are creating. Generate a new private key and copy-paste the generated json
+into a `firebase-credentials.json` file.
 
-```dotenv
-FIREBASE_ADMIN_CERTS='{ "type": "service_account", ... }'
+```json
+{
+  "type": "*********",
+  "project_id": "***********",
+  "private_key_id": "*************",
+  "private_key": "*****************",
+  "client_email": "*********",
+  "client_id": "*******",
+  "auth_uri": "********",
+  "token_uri": "********",
+  "auth_provider_x509_cert_url": "********",
+  "client_x509_cert_url": "********"
+} 
 ```
 
-#### 2. Create a `FirebaseAuth` instance by reading the env variable
+Don't forget to add the `firebase-credentials.json` file to your `.gitignore`.
 
-You can create a `FirebaseAuth` struct by deserializing the env string that we set
-into `FirebaseAdmin` struct and call the `FirebaseAuth::with_firebase_admin()`
-function.
-
-```rust
-dotenv().ok();
-let firebase_admin_certs = env::var("FIREBASE_ADMIN_CERTS").unwrap();
-let firebase_admin = serde_json::from_str::<FirebaseAdmin>( & firebase_admin_certs)
-.unwrap();
-let firebase_auth = FirebaseAuth::with_firebase_admin(firebase_admin);
+```gitignore
+# Firebase service account's secret credentials
+firebase-credentials.json
 ```
 
-#### 3. Add `FirebaseAuth` to the managed server state in Rocket
+#### 2. Create a `FirebaseAuth` instance and add to server state
 
-In order to access the `FirebaseAuth` instance from our endpoint functions, add
-it to the server state.
+Add `rocket-firebase-auth` to your project.
+
+```toml
+rocket_firebase_auth = "0.2.0"
+```
+
+Now, you can create a `FirebaseAuth` struct by reading the json file with a helper
+function included with the default import.
 
 ```rust
+use rocket::{Build, Rocket};
+use rocket_firebase_auth::FirebaseAuth;
+
 pub struct ServerState {
     pub auth: FirebaseAuth
 }
 
-#[rocket::launchj]
+#[rocket::launch]
 async fn rocket() -> Rocket<Build> {
-    dotenv().ok();
-    let firebase_admin_certs = env::var("FIREBASE_ADMIN_CERTS").unwrap();
-    let firebase_admin = serde_json::from_str::<FirebaseAdmin>(&firebase_admin_certs)
-        .unwrap();
-    let firebase_auth = FirebaseAuth::with_firebase_admin(firebase_admin);
+    let firebase_auth = FirebaseAuth::try_from_credentials("./firebase-credentials.json")
+        .expect("Failed to read Firebase credentials");
 
     rocket::build()
-        .mount("/", routes![...])
+        .mount("/", routes![hello_world])
         .manage(ServerState {
             auth: firebase_auth
         })
 }
 ```
 
-#### 4. Verify the token from the endpoint function
+#### 3. Verify the token from the endpoint function
 
 On endpoints that we except to receive Authorization headers containing our encoded
 Firebase tokens from the client, we can add a field to the endpoint function.

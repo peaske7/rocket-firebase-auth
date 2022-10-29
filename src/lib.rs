@@ -29,3 +29,4 @@ pub mod errors;
 pub mod firebase_auth;
 pub mod jwk;
 pub mod jwt;
+pub mod rocket;

@@ -72,17 +72,22 @@ impl FirebaseAuth {
 
     /// Create a new FirebaseAuth struct from a dotenv file
     #[cfg(feature = "env")]
-    pub fn try_from_env() -> Result<Self, AuthError> {
-        Self::try_from_filename(".env")
+    pub fn try_from_env(variable_name: &str) -> Result<Self, AuthError> {
+        Self::try_from_filename(".env", variable_name)
     }
 
     /// Create a new FirebaseAuth struct by providing a dotenv filepath
-    /// (for example when you want to pass a `.env.test` file for tests)
+    ///
+    /// This function is will most likely find its way in the codebase when
+    /// supplying the `FirebaseAuth` dummy values in tests.
     #[cfg(feature = "env")]
-    pub fn try_from_filename(filepath: &str) -> Result<Self, AuthError> {
+    pub fn try_from_filename(
+        filepath: &str,
+        variable_name: &str,
+    ) -> Result<Self, AuthError> {
         dotenvy::from_filename(filepath).ok();
 
-        env::var("FIREBASE_CREDENTIALS")
+        env::var(variable_name)
             .map_err(|e| {
                 AuthError::Env(Env::InvalidFirebaseCredentials(e.to_string()))
             })

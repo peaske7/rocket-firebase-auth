@@ -1,6 +1,6 @@
 [package]
 name = "rocket_firebase_auth"
-version = "0.1.1"
+version = "0.2.0"
 edition = "2021"
 
 description = "Encode/Decode firebase tokens in rocket apps"
@@ -22,7 +22,7 @@ include = [
 path = "src/lib.rs"
 
 [features]
-default = []
+default = ["env"]
 
 ## Enables support for reading in the Firebase Credentials from dotenv
 ## and non-dotenv files.
