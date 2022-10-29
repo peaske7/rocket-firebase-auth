@@ -1,18 +1,16 @@
+#[cfg(feature = "encode")]
 use chrono::Utc;
 use futures::TryFutureExt;
-use jsonwebtoken::{
-    decode_header,
-    Algorithm,
-    DecodingKey,
-    EncodingKey,
-    Header,
-    Validation,
-};
+#[cfg(feature = "encode")]
+use jsonwebtoken::EncodingKey;
+use jsonwebtoken::{decode_header, Algorithm, DecodingKey, Header, Validation};
 use serde::{Deserialize, Serialize};
 
+#[cfg(feature = "encode")]
+use crate::firebase_auth::AUD_URL;
 use crate::{
     errors::{AuthError, InvalidJwt},
-    firebase_auth::FirebaseAuth,
+    firebase_auth::{FirebaseAuth, JWKS_URL},
     jwk::{jwks, Kid},
 };
 
@@ -26,6 +24,7 @@ pub struct Jwt {
 }
 
 /// String representation of an encoded JWT token
+#[cfg(feature = "encode")]
 #[derive(Debug)]
 pub struct EncodedToken(pub String);
 
@@ -49,10 +48,11 @@ fn build_validation(project_id: &str) -> Validation {
 
 impl Jwt {
     /// Creates a new Jwt struct.
-    pub fn new(uid: &str, audience: &str) -> Self {
+    #[cfg(feature = "encode")]
+    pub fn new(uid: &str) -> Self {
         let iat = Utc::now().timestamp() as u64;
         Self {
-            aud: audience.to_string(),
+            aud: AUD_URL.to_string(),
             iat,
             exp: iat + (60 * 60),
             sub: uid.to_string(),
@@ -60,24 +60,18 @@ impl Jwt {
     }
 
     /// Creates a new encoded token
+    #[cfg(feature = "encode")]
     pub fn encode(
         uid: &str,
         firebase_auth: &FirebaseAuth,
     ) -> Result<EncodedToken, AuthError> {
         let mut header = Header::new(Algorithm::RS256);
-        header.kid =
-            Some(firebase_auth.firebase_admin.private_key_id.to_string());
+        header.kid = Some(firebase_auth.credentials.private_key_id.to_string());
 
         EncodingKey::from_rsa_pem(
-            firebase_auth.firebase_admin.private_key.as_bytes(),
+            firebase_auth.credentials.private_key.as_bytes(),
         )
-        .and_then(|key| {
-            jsonwebtoken::encode(
-                &header,
-                &Jwt::new(uid, &firebase_auth.aud_url),
-                &key,
-            )
-        })
+        .and_then(|key| jsonwebtoken::encode(&header, &Jwt::new(uid), &key))
         .map(EncodedToken)
         .map_err(AuthError::from)
     }
@@ -108,6 +102,15 @@ impl Jwt {
         token: &str,
         firebase_auth: &FirebaseAuth,
     ) -> Result<DecodedToken, AuthError> {
+        Self::verify_with_jwks_url(token, JWKS_URL, firebase_auth).await
+    }
+
+    /// Exposes the `jwks_url` field for testing purposes
+    pub async fn verify_with_jwks_url(
+        token: &str,
+        jwks_url: &str,
+        firebase_auth: &FirebaseAuth,
+    ) -> Result<DecodedToken, AuthError> {
         let kid = decode_header(token).map_err(AuthError::from).and_then(
             |header| {
                 header
@@ -117,7 +120,7 @@ impl Jwt {
             },
         )?;
 
-        let jwk = jwks(&firebase_auth.jwks_url)
+        let jwk = jwks(jwks_url)
             .and_then(|mut key_map| async move {
                 key_map
                     .remove(&kid)
@@ -130,7 +133,7 @@ impl Jwt {
                 jsonwebtoken::decode::<Jwt>(
                     token,
                     &key,
-                    &build_validation(&firebase_auth.firebase_admin.project_id),
+                    &build_validation(&firebase_auth.credentials.project_id),
                 )
             })
             .map(|token_data| DecodedToken {

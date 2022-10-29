@@ -21,13 +21,22 @@ include = [
 [lib]
 path = "src/lib.rs"
 
+[features]
+default = []
+env = ["dep:dotenvy", "dep:serde_json"]
+encode = ["dep:chrono"]
+
 [dependencies]
-jsonwebtoken = { version= "8.1.1", features = ["use_pem"] }
+jsonwebtoken = { version = "8.1.1", features = ["use_pem"] }
 futures = "0.3.21"
 serde = { version = "1.0.138" }
 reqwest = { version = "0.11.11", features = ["json"] }
-chrono = { version = "0.4", features = ["serde"] }
 rocket = { version = "0.5.0-rc.1", features = ["json"] }
+
+dotenvy = { version = "0.15.6", optional = true }
+serde_json = { version = "1.0.87", optional = true }
+
+chrono = { version = "0.4", features = ["serde"], optional = true }
 
 [dev-dependencies]
 wiremock = "0.5.14"

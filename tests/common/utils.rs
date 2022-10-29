@@ -1,7 +1,7 @@
 use once_cell::sync::Lazy;
 use rocket::serde::json::serde_json::json;
 use rocket_firebase_auth::{
-    firebase_auth::{FirebaseAdmin, FirebaseAuth},
+    firebase_auth::{Credentials, FirebaseAuth},
     jwk::{Jwk, KeysResponse},
 };
 use serde::Deserialize;
@@ -46,17 +46,13 @@ pub struct Scenario {
 }
 
 pub fn firebase_auth() -> FirebaseAuth {
-    FirebaseAuth::new(
-        FirebaseAdmin {
-            project_id:     "".to_string(),
-            private_key_id: "".to_string(),
-            private_key:    "".to_string(),
-            client_email:   "".to_string(),
-            client_id:      "".to_string(),
-        },
-        "http://localhost:8888/jwks_url",
-        "http://localhost:8888/aud_url",
-    )
+    FirebaseAuth::new(Credentials {
+        project_id:     "".to_string(),
+        private_key_id: "".to_string(),
+        private_key:    "".to_string(),
+        client_email:   "".to_string(),
+        client_id:      "".to_string(),
+    })
 }
 
 pub async fn setup_mock_server() -> MockServer {

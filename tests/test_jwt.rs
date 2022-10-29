@@ -1,4 +1,6 @@
-use crate::utils::{
+mod common;
+
+use crate::common::utils::{
     firebase_auth,
     load_scenario,
     mock_jwk_issuer,
@@ -22,8 +24,8 @@ async fn missing_kid() {
     ));
 }
 
-#[tokio::test]
 // Test for when the JWK issuer return empty list
+#[tokio::test]
 async fn missing_jwk() {
     let mock_server = setup_mock_server().await;
     let scenario = load_scenario("missing_jwk");
@@ -35,7 +37,12 @@ async fn missing_jwk() {
         .await;
 
     let firebase_auth = firebase_auth();
-    let decoded_token = Jwt::verify(&scenario.token, &firebase_auth).await;
+    let decoded_token = Jwt::verify_with_jwks_url(
+        &scenario.token,
+        "http://localhost:8888/jwks_url",
+        &firebase_auth,
+    )
+    .await;
 
     assert!(decoded_token.is_err());
     assert!(matches!(

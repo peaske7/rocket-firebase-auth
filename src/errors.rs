@@ -9,6 +9,9 @@ pub enum AuthError {
     InvalidAuthHeader(InvalidAuthHeader),
     /// jsonwebtoken errors
     JsonWebTokenError(String),
+    #[cfg(feature = "dotenv")]
+    /// Failures related to reading from environment variables
+    Env(Env),
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -31,6 +34,13 @@ pub enum InvalidAuthHeader {
     MissingBearerValue,
     /// Invalid Bearer token format. Couldn't parse to BearerToken type
     InvalidFormat(String),
+}
+
+#[cfg(feature = "env")]
+#[derive(Debug)]
+pub enum Env {
+    /// Invalid Firebase credentials given
+    InvalidFirebaseCredentials(String),
 }
 
 impl From<jsonwebtoken::errors::Error> for AuthError {
