@@ -11,6 +11,13 @@ license = "MIT"
 readme = "README.md"
 keywords = ["firebase", "rocket", "jsonwebtokens"]
 
+include = [
+    "src/*",
+    "./Cargo.toml",
+    "./LICENSE",
+    "./README.md"
+]
+
 [lib]
 path = "src/lib.rs"
 
