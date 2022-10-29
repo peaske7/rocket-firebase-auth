@@ -3,6 +3,19 @@ name = "server"
 version = "0.1.0"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
+# dotenvy ... so we can use `.env` files easily
+dotenvy = "0.15.6"
+# futures ... so we can chain futures to write pretty functions
+futures = "0.3.21"
+# serde_json ... to deserialize the admin certs env variable
+serde_json = "1.0.87"
+# serde ... to add serialization/deserializtion of api structs
+serde = "1.0.147"
+# rocket ... 🚀
+rocket = { version = "0.5.0-rc.1", features = ["json"] }
+# rocket_cors ... we can set cors options ourselves, but I found using this crate 
+#   to be a more developer friendly experience.
+rocket_cors = { git = "https://github.com/lawliet89/rocket_cors", rev = "54fae0701dffbe5df686465780218644ee3fae5f" }
+# rocket_firebase_auth ... so we can use firebase tokens hassle-free!
+rocket_firebase_auth = { git = "https://github.com/DrPoppyseed/rocket-firebase-auth", rev = "82ec8fc7864c9c6eb1a7e5954620fc9de58d5449" }

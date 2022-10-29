@@ -4,6 +4,10 @@ node_modules
 # Rust
 target
 
+# other
+.env
+!.env.example
+
 # Logs
 logs
 *.log
