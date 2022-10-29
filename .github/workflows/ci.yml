@@ -1,6 +1,10 @@
 name: CI
 
-on: [push, pull_request]
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
 
 env:
   CARGO_TERM_COLOR: always
@@ -63,4 +67,6 @@ jobs:
 
       - name: Upload to codecov
         uses: codecov/codecov-action@v3
+        with:
+          verbose: true
         continue-on-error: true
