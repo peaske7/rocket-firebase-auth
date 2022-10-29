@@ -1,6 +1,6 @@
 [package]
 name = "rocket_firebase_auth"
-version = "0.2.0"
+version = "0.2.1"
 edition = "2021"
 
 description = "Encode/Decode firebase tokens in rocket apps"
