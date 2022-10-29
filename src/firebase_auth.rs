@@ -30,6 +30,9 @@ pub struct Credentials {
     pub(crate) client_id:      String,
 }
 
+/// Firebase Auth instance
+///
+///
 #[derive(Debug, Deserialize)]
 pub struct FirebaseAuth {
     pub(crate) credentials: Credentials,

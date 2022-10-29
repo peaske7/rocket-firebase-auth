@@ -61,7 +61,6 @@ impl Jwt {
     /// Creates a new Jwt token
     ///
     /// The new token is created with a given Firebase `uid` and `project_id`.
-    ///
     #[cfg(feature = "encode")]
     pub fn new(uid: &str, project_id: &str) -> Self {
         let iat = Utc::now().timestamp() as u64;
@@ -74,6 +73,26 @@ impl Jwt {
     }
 
     /// Creates a new encoded token
+    ///
+    /// Encode a JWT token with RS256 and an RSA private key provided by Firebase
+    /// with the `uid` and `project_id` fields included as the claims.
+    ///
+    /// # Examples
+    ///
+    /// ```rust, ignore
+    /// use rocket_firebase_auth::{
+    ///     jwt::{Jwt, EncodedToken},
+    ///     firebase_auth::FirebaseAuth,
+    ///     errors::AuthError
+    /// };
+    ///
+    /// async fn something() {
+    ///     ...
+    ///     let uid = "...";
+    ///     let project_id = "...":
+    ///     let encoded_token = Jwt::encode(uid, project_id).await?;
+    /// }
+    /// ```
     #[cfg(feature = "encode")]
     pub fn encode(
         uid: &str,
@@ -106,7 +125,7 @@ impl Jwt {
     ///
     /// ```rust
     /// use rocket_firebase_auth::{
-    ///     jwt::{ Jwt, DecodedToken },
+    ///     jwt::{Jwt, DecodedToken},
     ///     firebase_auth::FirebaseAuth,
     ///     errors::AuthError
     /// };

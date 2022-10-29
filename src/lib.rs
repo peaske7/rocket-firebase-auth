@@ -12,8 +12,10 @@
 //!
 //! `rocket-firebase-auth` has two features:
 //!
-//! [env]: Includes functions that helps in initializing Firebase Auth from dotenv files
-//! [encode]: Adds support for encoding tokens
+//! `env`: Includes functions that helps in initializing Firebase Auth from dotenv files
+//!
+//! `encode`: Adds support for encoding tokens
+//!
 #![deny(
     missing_debug_implementations,
     missing_copy_implementations,

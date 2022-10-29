@@ -18,4 +18,4 @@ rocket = { version = "0.5.0-rc.1", features = ["json"] }
 #   to be a more developer friendly experience.
 rocket_cors = { git = "https://github.com/lawliet89/rocket_cors", rev = "54fae0701dffbe5df686465780218644ee3fae5f" }
 # rocket_firebase_auth ... so we can use firebase tokens hassle-free!
-rocket_firebase_auth = { git = "https://github.com/DrPoppyseed/rocket-firebase-auth", rev = "82ec8fc7864c9c6eb1a7e5954620fc9de58d5449" }
+rocket_firebase_auth = "0.2.0"

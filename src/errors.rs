@@ -16,6 +16,7 @@ pub enum AuthError {
     Env(Env),
 }
 
+/// Errors around the contents of a decoded token
 #[derive(Debug, Copy, Clone)]
 pub enum InvalidJwt {
     /// Kid is missing
@@ -24,6 +25,7 @@ pub enum InvalidJwt {
     MissingJwk,
 }
 
+/// Errors around invalid request headers and encoded tokens
 #[derive(Debug)]
 pub enum InvalidAuthHeader {
     /// Too many Authorization headers. Expects only 1
@@ -38,6 +40,7 @@ pub enum InvalidAuthHeader {
     InvalidFormat(String),
 }
 
+/// Errors that occur when reading environment variables
 #[cfg(feature = "env")]
 #[derive(Debug)]
 pub enum Env {

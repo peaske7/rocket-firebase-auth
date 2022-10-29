@@ -71,7 +71,7 @@ async fn verify_token(
     Jwt::verify(&token.0, &state.auth)
         .map_ok(|decoded_token| ApiResponse {
             json:   Some(rocket_serde::json::Json(VerifyTokenResponse {
-                uid: decoded_token.claims.sub,
+                uid: decoded_token.uid,
             })),
             status: Status::Ok,
         })

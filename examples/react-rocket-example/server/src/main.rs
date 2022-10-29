@@ -1,9 +1,7 @@
-use std::{env, str::FromStr};
-
-use dotenvy::dotenv;
 use rocket::{Build, Rocket};
 use rocket_cors::{AllowedOrigins, CorsOptions};
-use rocket_firebase_auth::firebase_auth::{FirebaseAdmin, FirebaseAuth};
+use rocket_firebase_auth::firebase_auth::FirebaseAuth;
+use std::str::FromStr;
 
 mod api;
 
@@ -14,16 +12,9 @@ pub struct ServerState {
 
 #[rocket::launch]
 async fn rocket() -> Rocket<Build> {
-    // Setup dotenv to read env variables
-    dotenv().ok();
-    let firebase_admin_certs = env::var("FIREBASE_ADMIN_CERTS").expect(
-        "Failed to retrieve environment variable `FIREBASE_ADMIN_CERTS`",
-    );
-    let firebase_admin =
-        serde_json::from_str::<FirebaseAdmin>(&firebase_admin_certs)
-            .expect("Failed to deserialize value for `FIREBASE_ADMIN_CERTS`");
-
-    let firebase_auth = FirebaseAuth::with_firebase_admin(firebase_admin);
+    let firebase_auth =
+        FirebaseAuth::try_from_credentials("firebase-certs.json")
+            .expect("Failed to read firebase credentials");
 
     // Setup cors
     let cors = CorsOptions::default()
