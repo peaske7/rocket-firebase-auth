@@ -23,7 +23,12 @@ path = "src/lib.rs"
 
 [features]
 default = []
+
+## Enables support for reading in the Firebase Credentials from dotenv
+## and non-dotenv files.
 env = ["dep:dotenvy", "dep:serde_json"]
+
+## Enables support for encoding tokens on the backend
 encode = ["dep:chrono"]
 
 [dependencies]

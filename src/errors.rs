@@ -1,3 +1,5 @@
+//! Error management for the library
+
 /// All rocket-firebase-auth errors are consolidated into the following AuthError
 #[derive(Debug)]
 pub enum AuthError {

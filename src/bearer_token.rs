@@ -1,3 +1,5 @@
+//! Extracting bearer tokens from request headers
+
 use crate::errors::{AuthError, InvalidAuthHeader};
 use rocket::{http::Status, outcome, outcome::IntoOutcome, request, Request};
 use std::convert::TryFrom;

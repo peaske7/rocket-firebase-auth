@@ -1,3 +1,5 @@
+//! Token encoding/decoding module
+
 #[cfg(feature = "encode")]
 use chrono::Utc;
 use futures::TryFutureExt;

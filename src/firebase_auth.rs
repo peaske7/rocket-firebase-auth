@@ -1,3 +1,5 @@
+//! Structs and functions essential and initializing Firebase Auth
+
 #[cfg(feature = "env")]
 use crate::errors::{AuthError, Env};
 

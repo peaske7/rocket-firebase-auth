@@ -4,7 +4,7 @@
 [![crate](https://img.shields.io/crates/v/rocket-firebase-auth.svg)](https://crates.io/crates/rocket-firebase-auth)
 [![codecov](https://img.shields.io/codecov/c/github/DrPoppyseed/rocket-firebase-auth)](https://codecov.io/gh/DrPoppyseed/rocket-firebase-auth)
 
-Encode/decode Firebase tokens in Rocket apps with ease.
+Firebase Auth with Rocket, batteries included
 
 ## Getting started
 

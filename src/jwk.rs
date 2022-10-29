@@ -1,3 +1,5 @@
+//! JWKs fetcher module
+
 use std::collections::HashMap;
 
 use crate::errors::AuthError;
