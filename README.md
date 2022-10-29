@@ -1,13 +1,14 @@
 # rocket-firebase-auth
 
 ![status](https://github.com/Drpoppyseed/rocket-firebase-auth/actions/workflows/ci.yml/badge.svg)
+[![crate](https://img.shields.io/crates/v/rocket-firebase-auth.svg)](https://crates.io/crates/rocket-firebase-auth)
 [![codecov](https://img.shields.io/codecov/c/github/DrPoppyseed/rocket-firebase-auth)](https://codecov.io/gh/DrPoppyseed/rocket-firebase-auth)
 
 Encode/decode Firebase tokens in Rocket apps with ease.
 
 ## Getting started
 
-### 1. Set Firebase service account keys as env variables
+#### 1. Set Firebase service account keys as env variables
 
 If you haven't already, create a service account for the Rocket server you are
 adding firebase to. Generate a new private key and copy paste the generated json
@@ -17,7 +18,7 @@ into a `.env` file.
 FIREBASE_ADMIN_CERTS='{ "type": "service_account", ... }'
 ```
 
-### 2. Create a `FirebaseAuth` instance by reading the env variable
+#### 2. Create a `FirebaseAuth` instance by reading the env variable
 
 You can create a `FirebaseAuth` struct by deserializing the env string that we set
 into `FirebaseAdmin` struct and call the `FirebaseAuth::with_firebase_admin()`
@@ -31,7 +32,7 @@ let firebase_admin = serde_json::from_str::<FirebaseAdmin>( & firebase_admin_cer
 let firebase_auth = FirebaseAuth::with_firebase_admin(firebase_admin);
 ```
 
-### 3. Add `FirebaseAuth` to the managed server state in Rocket
+#### 3. Add `FirebaseAuth` to the managed server state in Rocket
 
 In order to access the `FirebaseAuth` instance from our endpoint functions, add
 it to the server state.
@@ -57,7 +58,7 @@ async fn rocket() -> Rocket<Build> {
 }
 ```
 
-### 4. Verify the token from the endpoint function
+#### 4. Verify the token from the endpoint function
 
 On endpoints that we except to receive Authorization headers containing our encoded
 Firebase tokens from the client, we can add a field to the endpoint function.
