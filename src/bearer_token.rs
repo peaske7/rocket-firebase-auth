@@ -28,7 +28,7 @@ impl TryFrom<&str> for BearerToken {
                     `Bearer <token>`. Number of arguments did not match the \
                     number of arguments expected.".to_string()
                 ))),
-            parts if parts[1].len() > 1 =>
+            parts if parts[1].is_empty() =>
                 Err(AuthError::InvalidAuthHeader(
                     InvalidAuthHeader::MissingBearerValue,
                 )),
