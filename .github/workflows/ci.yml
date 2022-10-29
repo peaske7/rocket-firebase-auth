@@ -58,22 +58,9 @@ jobs:
           command: test
           args: --no-fail-fast -- --test-threads=1
 
-      - name: Prepare coverage
+      - name: Collect coverage
         uses: actions-rs/grcov@v0.1
-        with:
-          command: grcov
-          args: |
-            ./coverage \
-              -s . \
-              --binary-path ./target/debug/ \
-              --branch \
-              --ignore-not-existing \
-              --ignore 'tests/*' \
-              -o ./coverage.lcov
 
       - name: Upload to codecov
         uses: codecov/codecov-action@v3
-        with:
-          files: ./coverage.lcov
-          verbose: true
         continue-on-error: true
