@@ -1,0 +1,79 @@
+name: CI
+
+on: [push, pull_request]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  code-style:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v1
+
+      - name: Install toolchain with rustfmt and clippy
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: nightly
+          override: true
+          components: rustfmt, clippy
+
+      - name: Run cargo clippy
+        uses: actions-rs/cargo@v1
+        with:
+          command: clippy
+
+      - name: Run rustfmt
+        uses: actions-rs/cargo@v1
+        with:
+          command: fmt
+          args: --all -- --check
+
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v1
+
+      - name: Install toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          override: true
+
+      - name: Clean workspace
+        uses: actions-rs/cargo@v1
+        with:
+          command: clean
+
+      - name: Run tests
+        uses: actions-rs/cargo@v1
+        env:
+          CARGO_INCREMENTAL: '0'
+          RUSTFLAGS: '-Zprofile -Ccodegen-units=1 -Cinline-threshold=0 -Clink-dead-code -Coverflow-checks=off -Cpanic=abort -Zpanic_abort_tests'
+          RUSTDOCFLAGS: '-Zprofile -Ccodegen-units=1 -Cinline-threshold=0 -Clink-dead-code -Coverflow-checks=off -Cpanic=abort -Zpanic_abort_tests'
+        with:
+          command: test
+          args: --no-fail-fast -- --test-threads=1
+
+      - name: Prepare coverage
+        uses: actions-rs/grcov@v0.1
+        with:
+          command: grcov
+          args: |
+            ./coverage \
+              -s . \
+              --binary-path ./target/debug/ \
+              --branch \
+              --ignore-not-existing \
+              --ignore 'tests/*' \
+              -o ./coverage.lcov
+
+      - name: Upload to codecov
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./coverage.lcov
+          verbose: true
+        continue-on-error: true
