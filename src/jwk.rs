@@ -21,6 +21,19 @@ pub struct Jwk {
     pub n:   String,
 }
 
+impl Jwk {
+    /// Creates a new Firebase Jwk with valid defaults
+    pub fn new(kid: &str, n: &str) -> Self {
+        Self {
+            e:   "AQAB".to_string(),
+            alg: "RS256".to_string(),
+            kty: "RSA".to_string(),
+            kid: kid.to_string(),
+            n:   n.to_string(),
+        }
+    }
+}
+
 /// A vector representation of the JWKs list we receive as a response from Google
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct KeysResponse {

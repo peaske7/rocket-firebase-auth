@@ -57,7 +57,7 @@ impl TryFrom<String> for FirebaseAuth {
     type Error = AuthError;
 
     fn try_from(credentials: String) -> Result<Self, Self::Error> {
-        serde_json::from_str::<Credentials>(&credentials)
+        serde_json::from_str::<Credentials>(credentials.as_str())
             .map(|deserialized_credentials| {
                 FirebaseAuth::new(deserialized_credentials)
             })
@@ -76,7 +76,7 @@ impl FirebaseAuth {
     /// Create a new FirebaseAuth struct from a dotenv file
     #[cfg(feature = "env")]
     pub fn try_from_env(variable_name: &str) -> Result<Self, AuthError> {
-        Self::try_from_filename(".env", variable_name)
+        Self::try_from_env_with_filename(".env", variable_name)
     }
 
     /// Create a new FirebaseAuth struct by providing a dotenv filepath
@@ -84,7 +84,7 @@ impl FirebaseAuth {
     /// This function is will most likely find its way in the codebase when
     /// supplying the `FirebaseAuth` dummy values in tests.
     #[cfg(feature = "env")]
-    pub fn try_from_filename(
+    pub fn try_from_env_with_filename(
         filepath: &str,
         variable_name: &str,
     ) -> Result<Self, AuthError> {
