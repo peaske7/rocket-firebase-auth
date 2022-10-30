@@ -22,7 +22,7 @@ pub enum InvalidJwt {
     /// Kid is missing
     MissingKid,
     /// Jwk for a Kid could not be found
-    MissingJwk,
+    MatchingJwkNotFound,
 }
 
 /// Errors around invalid request headers and encoded tokens
@@ -46,6 +46,8 @@ pub enum InvalidAuthHeader {
 pub enum Env {
     /// Invalid Firebase credentials given
     InvalidFirebaseCredentials(String),
+    /// Invalid file format received
+    InvalidFileFormat(String),
 }
 
 impl From<jsonwebtoken::errors::Error> for AuthError {

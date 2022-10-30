@@ -10,6 +10,8 @@ use wiremock::{
     ResponseTemplate,
 };
 
+pub static JWKS_URL: &str = "http://localhost:8888/jwks_url";
+
 #[derive(Debug, Deserialize)]
 pub struct ScenarioFile {
     scenario: HashMap<String, Scenario>,

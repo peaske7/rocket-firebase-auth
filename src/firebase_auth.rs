@@ -100,11 +100,20 @@ impl FirebaseAuth {
     /// Create a new FirebaseAuth struct from a file with the credentials given
     /// by Firebase, but not in a `.env` file.
     #[cfg(feature = "env")]
-    pub fn try_from_credentials(filepath: &str) -> Result<Self, AuthError> {
-        read_to_string(filepath)
-            .map_err(|e| {
-                AuthError::Env(Env::InvalidFirebaseCredentials(e.to_string()))
-            })
-            .and_then(|credentials| credentials.try_into())
+    pub fn try_from_json_file(filepath: &str) -> Result<Self, AuthError> {
+        // given file must be a `.json` file
+        if !filepath.ends_with(".json") {
+            Err(AuthError::Env(Env::InvalidFileFormat(format!(
+                "Expected .json file. Received {filepath}"
+            ))))
+        } else {
+            read_to_string(filepath)
+                .map_err(|e| {
+                    AuthError::Env(Env::InvalidFirebaseCredentials(
+                        e.to_string(),
+                    ))
+                })
+                .and_then(|credentials| credentials.try_into())
+        }
     }
 }

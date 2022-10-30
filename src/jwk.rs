@@ -21,15 +21,20 @@ pub struct Jwk {
     pub n:   String,
 }
 
+/// A vector representation of the JWKs list we receive as a response from Google
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct KeysResponse {
     pub keys: Vec<Jwk>,
 }
 
+/// A struct representation of the Kid for the Jwk
 #[derive(Eq, Hash, PartialEq, Debug)]
 pub struct Kid(pub String);
 
-pub async fn jwks(jwks_url: &str) -> Result<HashMap<Kid, Jwk>, AuthError> {
+/// Fetches a list of JWKs
+pub(crate) async fn jwks(
+    jwks_url: &str,
+) -> Result<HashMap<Kid, Jwk>, AuthError> {
     reqwest::get(jwks_url)
         .and_then(|resp| resp.json::<KeysResponse>())
         .map_ok(|keys_resp| {

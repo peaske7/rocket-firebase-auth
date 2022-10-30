@@ -49,10 +49,8 @@ pub struct DecodedToken {
 /// Create a validator used for decoding JWT tokens, provided by jsonwebtokens
 fn build_validation(project_id: &str) -> Validation {
     let mut validation = Validation::new(Algorithm::RS256);
-    validation.set_issuer(&[format!(
-        "https://securetoken.google.com/{}",
-        project_id
-    )]);
+    validation
+        .set_issuer(&[format!("https://securetoken.google.com/{project_id}",)]);
     validation.set_audience(&[project_id]);
     validation
 }
@@ -161,9 +159,9 @@ impl Jwt {
 
         let jwk = jwks(jwks_url)
             .and_then(|mut key_map| async move {
-                key_map
-                    .remove(&kid)
-                    .ok_or(AuthError::InvalidJwt(InvalidJwt::MissingJwk))
+                key_map.remove(&kid).ok_or(AuthError::InvalidJwt(
+                    InvalidJwt::MatchingJwkNotFound,
+                ))
             })
             .await?;
 
