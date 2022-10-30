@@ -4,7 +4,7 @@ use crate::common::utils::{
     load_scenario,
     mock_jwk_issuer,
     setup_mock_server,
-    JWKS_URL,
+    TEST_JWKS_URL,
 };
 use rocket_firebase_auth::{
     errors::{AuthError, InvalidJwt},
@@ -38,13 +38,9 @@ async fn missing_jwk() {
         .mount(&mock_server)
         .await;
 
-    let firebase_auth = FirebaseAuth::default();
-    let decoded_token = Jwt::verify_with_jwks_url(
-        scenario.token.as_str(),
-        JWKS_URL,
-        &firebase_auth,
-    )
-    .await;
+    let firebase_auth = FirebaseAuth::default().set_jwks_url(TEST_JWKS_URL);
+    let decoded_token =
+        Jwt::verify(scenario.token.as_str(), &firebase_auth).await;
 
     assert!(decoded_token.is_err());
     assert!(matches!(

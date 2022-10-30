@@ -4,14 +4,9 @@ use crate::common::utils::{
     load_scenario,
     mock_jwk_issuer,
     setup_mock_server,
-    JWKS_URL,
+    TEST_JWKS_URL,
 };
-use rocket_firebase_auth::{
-    errors::{AuthError, Env},
-    firebase_auth::FirebaseAuth,
-    jwk::Jwk,
-    jwt::Jwt,
-};
+use rocket_firebase_auth::{firebase_auth::FirebaseAuth, jwk::Jwk, jwt::Jwt};
 
 #[tokio::test]
 async fn should_succeed_with_env() {
@@ -24,13 +19,12 @@ async fn should_succeed_with_env() {
         .mount(&mock_server)
         .await;
 
-    let firebase_auth = FirebaseAuth::try_from_env("FIREBASE_CREDS").unwrap();
-    let decoded_token = Jwt::verify_with_jwks_url(
-        scenario.token.as_str(),
-        JWKS_URL,
-        &firebase_auth,
-    )
-    .await;
+    let firebase_auth = FirebaseAuth::try_from_env("FIREBASE_CREDS")
+        .unwrap()
+        .set_jwks_url(TEST_JWKS_URL);
+
+    let decoded_token =
+        Jwt::verify(scenario.token.as_str(), &firebase_auth).await;
 
     assert!(decoded_token.is_ok());
 
@@ -38,17 +32,6 @@ async fn should_succeed_with_env() {
 
     assert_eq!(decoded_token.uid, "some-uid");
     assert!(decoded_token.expires_at > decoded_token.issued_at);
-}
-
-#[test]
-fn should_fail_with_invalid_env_var() {
-    let firebase_auth = FirebaseAuth::try_from_env("INVALID_VAR_NAME");
-
-    let _desired_error = AuthError::Env(Env::InvalidFirebaseCredentials(
-        "environment variable not found".to_string(),
-    ));
-    assert!(firebase_auth.is_err());
-    assert!(matches!(firebase_auth.err().unwrap(), _desired_error))
 }
 
 #[tokio::test]
@@ -66,13 +49,10 @@ async fn should_succeed_with_env_with_filename() {
         "./tests/env_files/.env.test",
         "FIREBASE_CREDS",
     )
-    .unwrap();
-    let decoded_token = Jwt::verify_with_jwks_url(
-        scenario.token.as_str(),
-        JWKS_URL,
-        &firebase_auth,
-    )
-    .await;
+    .unwrap()
+    .set_jwks_url(TEST_JWKS_URL);
+    let decoded_token =
+        Jwt::verify(scenario.token.as_str(), &firebase_auth).await;
 
     assert!(decoded_token.is_ok());
 
@@ -95,13 +75,10 @@ async fn should_succeed_with_json_file() {
 
     let firebase_auth =
         FirebaseAuth::try_from_json_file("tests/env_files/firebase-creds.json")
-            .unwrap();
-    let decoded_token = Jwt::verify_with_jwks_url(
-        scenario.token.as_str(),
-        JWKS_URL,
-        &firebase_auth,
-    )
-    .await;
+            .unwrap()
+            .set_jwks_url(TEST_JWKS_URL);
+    let decoded_token =
+        Jwt::verify(scenario.token.as_str(), &firebase_auth).await;
 
     assert!(decoded_token.is_ok());
 
@@ -109,16 +86,4 @@ async fn should_succeed_with_json_file() {
 
     assert_eq!(decoded_token.uid, "some-uid");
     assert!(decoded_token.expires_at > decoded_token.issued_at);
-}
-
-#[test]
-fn should_fail_with_invalid_json_contents() {
-    let firebase_auth = FirebaseAuth::try_from_json_file(
-        "tests/env_files/firebase-creds.empty.json",
-    );
-
-    assert!(matches_enum_variant!(
-        firebase_auth.err().unwrap(),
-        AuthError::Env(Env::InvalidFirebaseCredentials { .. })
-    ))
 }

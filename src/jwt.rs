@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     errors::{AuthError, InvalidJwt},
-    firebase_auth::{FirebaseAuth, JWKS_URL},
+    firebase_auth::FirebaseAuth,
     jwk::{jwks, Kid},
 };
 
@@ -96,8 +96,10 @@ impl Jwt {
         uid: &str,
         firebase_auth: &FirebaseAuth,
     ) -> Result<EncodedToken, AuthError> {
-        let mut header = Header::new(Algorithm::RS256);
-        header.kid = Some(firebase_auth.credentials.private_key_id.to_string());
+        let header = Header {
+            kid: Some(firebase_auth.credentials.private_key_id.to_string()),
+            ..Header::new(Algorithm::RS256)
+        };
 
         EncodingKey::from_rsa_pem(
             firebase_auth.credentials.private_key.as_bytes(),
@@ -139,15 +141,6 @@ impl Jwt {
         token: &str,
         firebase_auth: &FirebaseAuth,
     ) -> Result<DecodedToken, AuthError> {
-        Self::verify_with_jwks_url(token, JWKS_URL, firebase_auth).await
-    }
-
-    /// Exposes the `jwks_url` field for testing purposes
-    pub async fn verify_with_jwks_url(
-        token: &str,
-        jwks_url: &str,
-        firebase_auth: &FirebaseAuth,
-    ) -> Result<DecodedToken, AuthError> {
         let kid = decode_header(token).map_err(AuthError::from).and_then(
             |header| {
                 header
@@ -157,7 +150,7 @@ impl Jwt {
             },
         )?;
 
-        let jwk = jwks(jwks_url)
+        let jwk = jwks(&firebase_auth.jwks_url)
             .and_then(|mut key_map| async move {
                 key_map.remove(&kid).ok_or(AuthError::InvalidJwt(
                     InvalidJwt::MatchingJwkNotFound,

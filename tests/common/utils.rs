@@ -10,7 +10,7 @@ use wiremock::{
     ResponseTemplate,
 };
 
-pub static JWKS_URL: &str = "http://localhost:8888/jwks_url";
+pub static TEST_JWKS_URL: &str = "http://localhost:8888/jwks_url";
 
 #[derive(Debug, Deserialize)]
 pub struct ScenarioFile {
@@ -20,7 +20,7 @@ pub struct ScenarioFile {
 pub static SCENARIOS: Lazy<HashMap<String, Scenario>> = Lazy::new(|| {
     fs::read_to_string("./tests/scenarios.toml")
         .map(|contents| toml::from_str::<ScenarioFile>(&contents))
-        .expect("Failed to parse scenarios from toml file.")
+        .unwrap()
         .map(|file| {
             file.scenario.into_iter().fold(
                 HashMap::new(),
@@ -30,7 +30,7 @@ pub static SCENARIOS: Lazy<HashMap<String, Scenario>> = Lazy::new(|| {
                 },
             )
         })
-        .expect("Failed to fold file contents into a hashmap")
+        .unwrap()
 });
 
 #[allow(dead_code)]

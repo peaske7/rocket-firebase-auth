@@ -21,21 +21,26 @@ pub static JWKS_URL: &str =
 /// The fields in the firebase admin object is necessary when encoding and
 /// decoding tokens. All fields should be kept secret.
 #[allow(dead_code)]
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct Credentials {
-    pub(crate) project_id:     String,
-    pub(crate) private_key_id: String,
-    pub(crate) private_key:    String,
-    pub(crate) client_email:   String,
-    pub(crate) client_id:      String,
+    pub project_id:     String,
+    pub private_key_id: String,
+    pub private_key:    String,
+    pub client_email:   String,
+    pub client_id:      String,
 }
 
 /// Firebase Auth instance
 ///
-///
-#[derive(Debug, Deserialize)]
+/// The `jwks_url` field is used to specify the endpoint to fetch JWKs from.
+/// In production, this should always be set to the static `JWKS_URL` value.
+/// However, in testing or staging environments when you want finer grained control
+/// over the values used, specify as, for example, localhost to mock the response.
+#[allow(dead_code)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct FirebaseAuth {
     pub(crate) credentials: Credentials,
+    pub(crate) jwks_url:    String,
 }
 
 impl Default for FirebaseAuth {
@@ -48,6 +53,7 @@ impl Default for FirebaseAuth {
                 client_email:   String::default(),
                 client_id:      String::default(),
             },
+            jwks_url:    JWKS_URL.to_string(),
         }
     }
 }
@@ -70,7 +76,10 @@ impl TryFrom<String> for FirebaseAuth {
 impl FirebaseAuth {
     /// Create a new FirebaseAuth struct by providing Credentials
     pub fn new(credentials: Credentials) -> Self {
-        Self { credentials }
+        Self {
+            credentials,
+            jwks_url: JWKS_URL.to_string(),
+        }
     }
 
     /// Create a new FirebaseAuth struct from a dotenv file
@@ -118,5 +127,70 @@ impl FirebaseAuth {
                 })
                 .and_then(|credentials| credentials.try_into())
         }
+    }
+
+    /// Override jwks_url from default JWKS_URL value to a user defined one.
+    ///
+    /// In cases when you want to setup mocks for the JWKS (for example, when
+    /// you want to always return the same JWKs), use `set_jwks_url` to override
+    /// the default JWKS_URL value.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use rocket_firebase_auth::firebase_auth::FirebaseAuth;
+    ///
+    /// async fn setup_auth() -> FirebaseAuth {
+    ///   FirebaseAuth::try_from_env("FIREBASE_CREDS")
+    ///     .unwrap()
+    ///     .set_jwks_url("http://localhost:8080/jwks_url")
+    /// }
+    /// ```
+    pub fn set_jwks_url(&self, url: &str) -> Self {
+        Self {
+            credentials: self.credentials.clone(),
+            jwks_url:    url.to_string(),
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn should_fail_with_invalid_env_var() {
+        let firebase_auth = FirebaseAuth::try_from_env("INVALID_VAR_NAME");
+
+        let _desired_error = AuthError::Env(Env::InvalidFirebaseCredentials(
+            "environment variable not found".to_string(),
+        ));
+        assert!(firebase_auth.is_err());
+        assert!(matches!(firebase_auth.err().unwrap(), _desired_error))
+    }
+
+    #[test]
+    fn should_fail_with_invalid_json_contents() {
+        let firebase_auth = FirebaseAuth::try_from_json_file(
+            "tests/env_files/firebase-creds.empty.json",
+        );
+
+        let res = matches!(
+            firebase_auth.err().unwrap(),
+            AuthError::Env(Env::InvalidFirebaseCredentials(_))
+        );
+
+        assert!(res);
+    }
+
+    #[test]
+    fn should_succeed_with_set_jwks_url() {
+        let firebase_auth = FirebaseAuth::try_from_json_file(
+            "tests/env_files/firebase-creds.json",
+        )
+        .map(|creds| creds.set_jwks_url("some_dummy_value"))
+        .unwrap();
+
+        assert_eq!(firebase_auth.jwks_url, "some_dummy_value");
     }
 }
