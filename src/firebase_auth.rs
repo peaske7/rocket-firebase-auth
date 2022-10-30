@@ -88,13 +88,16 @@ impl FirebaseAuth {
         filepath: &str,
         variable_name: &str,
     ) -> Result<Self, AuthError> {
-        dotenvy::from_filename(filepath).ok();
-
-        env::var(variable_name)
-            .map_err(|e| {
-                AuthError::Env(Env::InvalidFirebaseCredentials(e.to_string()))
-            })
-            .and_then(|credentials| credentials.try_into())
+        match dotenvy::from_filename(filepath) {
+            Ok(_) => env::var(variable_name)
+                .map_err(|e| {
+                    AuthError::Env(Env::InvalidFirebaseCredentials(
+                        e.to_string(),
+                    ))
+                })
+                .and_then(|credentials| credentials.try_into()),
+            Err(e) => Err(AuthError::Env(Env::MissingEnvFile(e.to_string()))),
+        }
     }
 
     /// Create a new FirebaseAuth struct from a file with the credentials given

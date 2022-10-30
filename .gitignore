@@ -2,6 +2,9 @@
 /target
 /Cargo.lock
 
+# Used for testing
+!.env
+
 # IDE related files
 /.idea
 rocket-firebase-auth.iml

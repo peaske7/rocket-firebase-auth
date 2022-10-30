@@ -48,6 +48,8 @@ pub enum Env {
     InvalidFirebaseCredentials(String),
     /// Invalid file format received
     InvalidFileFormat(String),
+    /// Missing env file
+    MissingEnvFile(String),
 }
 
 impl From<jsonwebtoken::errors::Error> for AuthError {
