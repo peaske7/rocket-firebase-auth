@@ -60,7 +60,7 @@ pub struct ServerState {
 
 #[rocket::launch]
 async fn rocket() -> Rocket<Build> {
-    let firebase_auth = FirebaseAuth::try_from_credentials("./firebase-credentials.json")
+    let firebase_auth = FirebaseAuth::try_from_json_file("firebase-credentials.json")
         .expect("Failed to read Firebase credentials");
 
     rocket::build()
@@ -85,7 +85,7 @@ async fn hello_world(
     token: BearerToken,
 ) -> status::Accepted<String> {
     let uid = Jwt::verify(&token.0, &state.auth)
-        .map_ok(|decoded_token| decoded_token.claims.sub)
+        .map_ok(|decoded_token| decoded_token.uid)
         .await
         .unwrap();
 
