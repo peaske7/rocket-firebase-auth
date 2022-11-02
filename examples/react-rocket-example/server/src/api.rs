@@ -12,7 +12,7 @@ use rocket::{
     Route,
     State,
 };
-use rocket_firebase_auth::{bearer_token::BearerToken, jwt::Jwt};
+use rocket_firebase_auth::bearer_token::BearerToken;
 use serde::Serialize;
 
 use crate::ServerState;
@@ -68,7 +68,9 @@ async fn verify_token(
     state: &State<ServerState>,
     token: BearerToken,
 ) -> Result<ApiResponse<VerifyTokenResponse>, ApiError> {
-    Jwt::verify(&token.0, &state.auth)
+    state
+        .auth
+        .verify(&token)
         .map_ok(|decoded_token| ApiResponse {
             json:   Some(rocket_serde::json::Json(VerifyTokenResponse {
                 uid: decoded_token.uid,

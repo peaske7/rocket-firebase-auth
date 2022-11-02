@@ -1274,9 +1274,9 @@ dependencies = [
 
 [[package]]
 name = "rocket_firebase_auth"
-version = "0.2.0"
+version = "0.2.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "219c65f7c61318b082fb331f7a3828ff53a399c45e8f2761492929984ce21d71"
+checksum = "ad486a58df80f4b4d9981373b4cde26232e9ecaf5607ed39f3e9bf3cab582ec2"
 dependencies = [
  "dotenvy",
  "futures",
