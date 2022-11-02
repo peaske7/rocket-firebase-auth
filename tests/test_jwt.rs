@@ -9,15 +9,14 @@ use crate::common::utils::{
 use rocket_firebase_auth::{
     errors::{AuthError, InvalidJwt},
     firebase_auth::FirebaseAuth,
-    jwt::Jwt,
 };
 
 #[tokio::test]
 async fn missing_kid() {
     let token_without_kid = load_scenario("missing_kid").token;
-    let firebase_auth = FirebaseAuth::default();
-    let decoded_token =
-        Jwt::verify(token_without_kid.as_str(), &firebase_auth).await;
+    let decoded_token = FirebaseAuth::default()
+        .verify_from_string(token_without_kid.as_str())
+        .await;
 
     assert!(decoded_token.is_err());
     assert!(matches!(
@@ -38,9 +37,10 @@ async fn missing_jwk() {
         .mount(&mock_server)
         .await;
 
-    let firebase_auth = FirebaseAuth::default().set_jwks_url(TEST_JWKS_URL);
-    let decoded_token =
-        Jwt::verify(scenario.token.as_str(), &firebase_auth).await;
+    let decoded_token = FirebaseAuth::default()
+        .set_jwks_url(TEST_JWKS_URL)
+        .verify_from_string(scenario.token.as_str())
+        .await;
 
     assert!(decoded_token.is_err());
     assert!(matches!(

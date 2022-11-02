@@ -11,7 +11,13 @@ use std::convert::TryFrom;
 /// Authorization: Bearer <some_bearer_token>
 /// ```
 #[derive(Debug)]
-pub struct BearerToken(pub String);
+pub struct BearerToken(String);
+
+impl BearerToken {
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+}
 
 /// Try to convert an Authorization headers to a valid bearer token
 impl TryFrom<&str> for BearerToken {

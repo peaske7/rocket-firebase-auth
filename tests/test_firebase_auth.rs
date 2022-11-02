@@ -6,7 +6,7 @@ use crate::common::utils::{
     setup_mock_server,
     TEST_JWKS_URL,
 };
-use rocket_firebase_auth::{firebase_auth::FirebaseAuth, jwk::Jwk, jwt::Jwt};
+use rocket_firebase_auth::{firebase_auth::FirebaseAuth, jwk::Jwk};
 
 #[tokio::test]
 async fn should_succeed_with_env() {
@@ -22,9 +22,9 @@ async fn should_succeed_with_env() {
     let firebase_auth = FirebaseAuth::try_from_env("FIREBASE_CREDS")
         .unwrap()
         .set_jwks_url(TEST_JWKS_URL);
-
-    let decoded_token =
-        Jwt::verify(scenario.token.as_str(), &firebase_auth).await;
+    let decoded_token = firebase_auth
+        .verify_from_string(scenario.token.as_str())
+        .await;
 
     assert!(decoded_token.is_ok());
 
@@ -51,8 +51,9 @@ async fn should_succeed_with_env_with_filename() {
     )
     .unwrap()
     .set_jwks_url(TEST_JWKS_URL);
-    let decoded_token =
-        Jwt::verify(scenario.token.as_str(), &firebase_auth).await;
+    let decoded_token = firebase_auth
+        .verify_from_string(scenario.token.as_str())
+        .await;
 
     assert!(decoded_token.is_ok());
 
@@ -77,8 +78,9 @@ async fn should_succeed_with_json_file() {
         FirebaseAuth::try_from_json_file("tests/env_files/firebase-creds.json")
             .unwrap()
             .set_jwks_url(TEST_JWKS_URL);
-    let decoded_token =
-        Jwt::verify(scenario.token.as_str(), &firebase_auth).await;
+    let decoded_token = firebase_auth
+        .verify_from_string(scenario.token.as_str())
+        .await;
 
     assert!(decoded_token.is_ok());
 

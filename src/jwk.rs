@@ -42,9 +42,25 @@ pub struct KeysResponse {
 
 /// A struct representation of the Kid for the Jwk
 #[derive(Eq, Hash, PartialEq, Debug)]
-pub struct Kid(pub String);
+pub struct Kid(String);
+
+impl Kid {
+    pub fn new(kid: &str) -> Self {
+        Self(kid.to_string())
+    }
+}
+
+impl From<String> for Kid {
+    fn from(kid: String) -> Self {
+        Self(kid)
+    }
+}
 
 /// Fetches a list of JWKs
+///
+/// The jwks_url endpoint (google identity kit by default) is called and is
+/// expected to return a list of JWKs. The list is converted into a lookup table
+/// for the Jwk by Kid.
 pub(crate) async fn jwks(
     jwks_url: &str,
 ) -> Result<HashMap<Kid, Jwk>, AuthError> {
@@ -54,7 +70,7 @@ pub(crate) async fn jwks(
             keys_resp.keys.into_iter().fold(
                 HashMap::<Kid, Jwk>::new(),
                 |mut key_map, key| {
-                    key_map.insert(Kid(key.kid.clone()), key);
+                    key_map.insert(Kid::from(key.kid.clone()), key);
                     key_map
                 },
             )

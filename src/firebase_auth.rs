@@ -1,20 +1,77 @@
 //! Structs and functions essential and initializing Firebase Auth
 
-#[cfg(feature = "env")]
-use crate::errors::{AuthError, Env};
+use crate::errors::{AuthError, Env, InvalidJwt};
 
 #[cfg(feature = "env")]
 use dotenvy;
 #[cfg(feature = "env")]
 use serde_json;
 
-use serde::Deserialize;
+use crate::{
+    bearer_token::BearerToken,
+    jwk::{jwks, Kid},
+};
+#[cfg(feature = "encode")]
+use chrono::Utc;
+use futures::TryFutureExt;
+use jsonwebtoken::{decode_header, Algorithm, DecodingKey, Validation};
+#[cfg(feature = "encode")]
+use jsonwebtoken::{EncodingKey, Header};
+use serde::{Deserialize, Serialize};
 #[cfg(feature = "env")]
 use std::{env, fs::read_to_string};
 
 /// Endpoint to fetch JWKs when verifying firebase tokens
 pub static JWKS_URL: &str =
     "https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com";
+
+/// The claims of a decoded JWT token used in firebase
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Jwt {
+    pub aud: String,
+    pub iat: u64,
+    pub exp: u64,
+    pub sub: String,
+}
+
+impl Jwt {
+    /// Creates a new Jwt token
+    ///
+    /// The new token is created with a given Firebase `uid` and `project_id`.
+    #[cfg(feature = "encode")]
+    pub fn new(uid: &str, project_id: &str) -> Self {
+        let iat = Utc::now().timestamp() as u64;
+        Self {
+            aud: project_id.to_string(),
+            iat,
+            exp: iat + (60 * 60),
+            sub: uid.to_string(),
+        }
+    }
+}
+
+/// String representation of an encoded JWT token
+#[cfg(feature = "encode")]
+#[derive(Debug)]
+pub struct EncodedToken(pub String);
+
+/// The decoded Firebase JWT token with fields renamed to match Firebase's
+/// mapped values.
+///
+/// ```txt
+/// jwt.claims.iat => decoded_token.issued_at
+/// jwt.claims.exp => decoded_token.expires_at
+/// jwt.claims.sub => decoded_token.uid
+/// ```
+#[derive(Debug)]
+pub struct DecodedToken {
+    /// Time the token was issued at in UNIX epoch. Must be in the past
+    pub issued_at:  u64,
+    /// Time the token is set to expire in UNIX epoch. Must be in the future.
+    pub expires_at: u64,
+    /// User ID issued by Firebase
+    pub uid:        String,
+}
 
 /// A partial representation of firebase admin object provided by firebase.
 ///
@@ -23,8 +80,11 @@ pub static JWKS_URL: &str =
 #[allow(dead_code)]
 #[derive(Debug, Clone, Deserialize)]
 pub struct Credentials {
+    /// The project_id will be used as the `aud` in JWT tokens
     pub project_id:     String,
+    /// The private_key_id will be used as the `kid` in JWT tokens
     pub private_key_id: String,
+    /// The private_key is the private RSA key used to sign the token
     pub private_key:    String,
     pub client_email:   String,
     pub client_id:      String,
@@ -152,6 +212,137 @@ impl FirebaseAuth {
             jwks_url:    url.to_string(),
         }
     }
+
+    /// Creates a new encoded token
+    ///
+    /// Encode a JWT token with RS256 and an RSA private key provided by Firebase
+    /// with the `uid` and `project_id` fields included as the claims.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use rocket_firebase_auth::{
+    ///     firebase_auth::FirebaseAuth,
+    ///     errors::AuthError
+    /// };
+    ///
+    /// async fn something(auth: &FirebaseAuth) {
+    ///     let uid = "...";
+    ///     let project_id = "...";
+    ///     let encoded_token = auth.encode(uid).await?;
+    /// }
+    /// ```
+    #[cfg(feature = "encode")]
+    pub fn encode(&self, uid: &str) -> Result<EncodedToken, AuthError> {
+        let header = Header {
+            kid: Some(self.credentials.private_key_id.clone()),
+            ..Header::new(Algorithm::RS256)
+        };
+
+        EncodingKey::from_rsa_pem(self.credentials.private_key.as_bytes())
+            .and_then(|key| {
+                jsonwebtoken::encode(
+                    &header,
+                    &Jwt::new(uid, &self.credentials.project_id),
+                    &key,
+                )
+            })
+            .map(EncodedToken)
+            .map_err(AuthError::from)
+    }
+
+    /// Verifies given JWT token
+    ///
+    /// Extract a kid from a given token if exists. Look for a jwk that is
+    /// mapped to the extracted kid from a map of kid-jwk pairs. Return a
+    /// decoded token using the jwk and a firebase project_id.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use futures::TryFutureExt;
+    /// use rocket::{get, State, response::status, http::Status};
+    /// use rocket_firebase_auth::{
+    ///     bearer_token::BearerToken,
+    ///     errors::AuthError,
+    ///     firebase_auth::FirebaseAuth
+    /// };
+    ///
+    /// struct ServerState {
+    ///     pub auth: FirebaseAuth
+    /// }
+    ///
+    /// #[get("/")]
+    /// async fn authenticated_route(
+    ///     state: &State<ServerState>,
+    ///     token: BearerToken
+    /// ) -> Status
+    /// {
+    ///     match state.auth.verify(&token).await {
+    ///         Ok(decoded_token) => {
+    ///             println!("Valid token. uid: {}", decoded_token.uid);
+    ///             Status::Ok
+    ///         },
+    ///         Err(_) => {
+    ///             println!("Invalid token.");
+    ///             Status::Forbidden
+    ///         }
+    ///     }
+    /// }
+    /// ```
+    pub async fn verify(
+        &self,
+        token: &BearerToken,
+    ) -> Result<DecodedToken, AuthError> {
+        self.verify_from_string(token.as_str()).await
+    }
+
+    /// Verify Firebase Jwt token in string representation
+    pub async fn verify_from_string(
+        &self,
+        token: &str,
+    ) -> Result<DecodedToken, AuthError> {
+        let kid = decode_header(token).map_err(AuthError::from).and_then(
+            |header| {
+                header
+                    .kid
+                    .map(Kid::from)
+                    .ok_or(AuthError::InvalidJwt(InvalidJwt::MissingKid))
+            },
+        )?;
+
+        let jwk = jwks(&self.jwks_url)
+            .and_then(|mut key_map| async move {
+                key_map.remove(&kid).ok_or(AuthError::InvalidJwt(
+                    InvalidJwt::MatchingJwkNotFound,
+                ))
+            })
+            .await?;
+
+        DecodingKey::from_rsa_components(&jwk.n, &jwk.e)
+            .and_then(|key| {
+                jsonwebtoken::decode::<Jwt>(
+                    token,
+                    &key,
+                    &build_validation(&self.credentials.project_id.clone()),
+                )
+            })
+            .map(|token_data| DecodedToken {
+                issued_at:  token_data.claims.iat,
+                expires_at: token_data.claims.exp,
+                uid:        token_data.claims.sub,
+            })
+            .map_err(AuthError::from)
+    }
+}
+
+/// Create a validator used for decoding JWT tokens, provided by jsonwebtokens
+fn build_validation(project_id: &str) -> Validation {
+    let mut validation = Validation::new(Algorithm::RS256);
+    validation
+        .set_issuer(&[format!("https://securetoken.google.com/{project_id}",)]);
+    validation.set_audience(&[project_id]);
+    validation
 }
 
 #[cfg(test)]

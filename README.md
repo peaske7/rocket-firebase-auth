@@ -44,17 +44,19 @@ firebase-credentials.json
 Add `rocket-firebase-auth` to your project.
 
 ```toml
-rocket_firebase_auth = "0.2.0"
+rocket_firebase_auth = "0.2.3"
 ```
 
 Now, you can create a `FirebaseAuth` struct by reading the json file with a helper
 function included with the default import.
 
 ```rust
-use rocket::{Build, Rocket};
-use rocket_firebase_auth::FirebaseAuth;
+use rocket::{routes, Build, Rocket};
+use rocket_firebase_auth::{
+    firebase_auth::FirebaseAuth
+};
 
-pub struct ServerState {
+struct ServerState {
     pub auth: FirebaseAuth
 }
 
@@ -79,17 +81,49 @@ Running the `Jwt::verify()` function will decode the token, where you can get th
 Firebase `uid`.
 
 ```rust
-#[get("/")]
-async fn hello_world(
-    state: &State<ServerState>,
-    token: BearerToken,
-) -> status::Accepted<String> {
-    let uid = Jwt::verify(&token.0, &state.auth)
-        .map_ok(|decoded_token| decoded_token.uid)
-        .await
-        .unwrap();
+use futures::TryFutureExt;
+use rocket::{get, http::Status, routes, Build, Rocket, State};
+use rocket_firebase_auth::{
+    bearer_token::BearerToken,
+    firebase_auth::FirebaseAuth,
+};
 
-    status::Accepted(Some(format!("uid: {uid}")))
+struct ServerState {
+    pub auth: FirebaseAuth,
+}
+
+// Example function that returns an `Ok` and prints the verified user's uid.
+// If the token is invalid, return with a `Forbidden` status code.
+#[get("/")]
+async fn hello_world(state: &State<ServerState>, token: BearerToken) -> Status {
+    match state
+        .auth
+        .verify(&token)                            // verify token
+        .map_ok(|decoded_token| decoded_token.uid) // extract uid from decoded token
+        .await
+    {
+        Ok(uid) => {
+            println!("Authentication succeeded with uid={uid}");
+            Status::Ok
+        }
+        Err(_) => {
+            println!("Authentication failed.");
+            Status::Forbidden
+        }
+    }
+}
+
+#[rocket::launch]
+async fn rocket() -> Rocket<Build> {
+    let firebase_auth =
+        FirebaseAuth::try_from_json_file("firebase-credentials.json")
+            .expect("Failed to read Firebase credentials");
+
+    rocket::build()
+        .mount("/", routes![hello_world])
+        .manage(ServerState {
+            auth: firebase_auth,
+        })
 }
 ```
 
