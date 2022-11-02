@@ -6,7 +6,7 @@ use crate::common::utils::{
     setup_mock_server,
     TEST_JWKS_URL,
 };
-use rocket_firebase_auth::{firebase_auth::FirebaseAuth, jwk::Jwk};
+use rocket_firebase_auth::{auth::FirebaseAuth, jwk::Jwk};
 
 #[tokio::test]
 async fn should_succeed_with_env() {

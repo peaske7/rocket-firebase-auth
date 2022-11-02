@@ -26,8 +26,8 @@
     unused_import_braces,
     unused_qualifications
 )]
+pub mod auth;
 pub mod bearer_token;
 pub mod errors;
-pub mod firebase_auth;
 pub mod jwk;
 pub mod rocket;

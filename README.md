@@ -53,7 +53,7 @@ function included with the default import.
 ```rust
 use rocket::{routes, Build, Rocket};
 use rocket_firebase_auth::{
-    firebase_auth::FirebaseAuth
+    auth::FirebaseAuth
 };
 
 struct ServerState {
@@ -84,8 +84,8 @@ Firebase `uid`.
 use futures::TryFutureExt;
 use rocket::{get, http::Status, routes, Build, Rocket, State};
 use rocket_firebase_auth::{
+    auth::FirebaseAuth,
     bearer_token::BearerToken,
-    firebase_auth::FirebaseAuth,
 };
 
 struct ServerState {

@@ -198,7 +198,7 @@ impl FirebaseAuth {
     /// # Example
     ///
     /// ```rust
-    /// use rocket_firebase_auth::firebase_auth::FirebaseAuth;
+    /// use rocket_firebase_auth::auth::FirebaseAuth;
     ///
     /// async fn setup_auth() -> FirebaseAuth {
     ///   FirebaseAuth::try_from_env("FIREBASE_CREDS")
@@ -222,7 +222,7 @@ impl FirebaseAuth {
     ///
     /// ```rust
     /// use rocket_firebase_auth::{
-    ///     firebase_auth::FirebaseAuth,
+    ///     auth::FirebaseAuth,
     ///     errors::AuthError
     /// };
     ///
@@ -265,7 +265,7 @@ impl FirebaseAuth {
     /// use rocket_firebase_auth::{
     ///     bearer_token::BearerToken,
     ///     errors::AuthError,
-    ///     firebase_auth::FirebaseAuth
+    ///     auth::FirebaseAuth
     /// };
     ///
     /// struct ServerState {
@@ -282,7 +282,7 @@ impl FirebaseAuth {
     ///         Ok(decoded_token) => {
     ///             println!("Valid token. uid: {}", decoded_token.uid);
     ///             Status::Ok
-    ///         },
+    ///         }
     ///         Err(_) => {
     ///             println!("Invalid token.");
     ///             Status::Forbidden

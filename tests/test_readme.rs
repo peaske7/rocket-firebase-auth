@@ -1,9 +1,6 @@
 use futures::TryFutureExt;
 use rocket::{get, http::Status, routes, Build, Rocket, State};
-use rocket_firebase_auth::{
-    bearer_token::BearerToken,
-    firebase_auth::FirebaseAuth,
-};
+use rocket_firebase_auth::{auth::FirebaseAuth, bearer_token::BearerToken};
 
 struct ServerState {
     pub auth: FirebaseAuth,

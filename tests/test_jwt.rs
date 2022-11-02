@@ -7,8 +7,8 @@ use crate::common::utils::{
     TEST_JWKS_URL,
 };
 use rocket_firebase_auth::{
+    auth::FirebaseAuth,
     errors::{AuthError, InvalidJwt},
-    firebase_auth::FirebaseAuth,
 };
 
 #[tokio::test]
