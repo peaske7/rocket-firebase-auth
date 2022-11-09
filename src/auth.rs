@@ -7,10 +7,7 @@ use dotenvy;
 #[cfg(feature = "env")]
 use serde_json;
 
-use crate::{
-    bearer_token::BearerToken,
-    jwk::{jwks, Kid},
-};
+use crate::bearer_token::BearerToken;
 #[cfg(feature = "encode")]
 use chrono::Utc;
 use futures::TryFutureExt;
@@ -97,14 +94,16 @@ pub struct Credentials {
 /// However, in testing or staging environments when you want finer grained control
 /// over the values used, specify as, for example, localhost to mock the response.
 #[allow(dead_code)]
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone)]
 pub struct FirebaseAuth {
     pub(crate) credentials: Credentials,
     pub(crate) jwks_url:    String,
+    pub(crate) client:      reqwest::Client,
 }
 
 impl Default for FirebaseAuth {
     fn default() -> Self {
+        let client = reqwest::Client::new();
         Self {
             credentials: Credentials {
                 project_id:     String::default(),
@@ -113,7 +112,8 @@ impl Default for FirebaseAuth {
                 client_email:   String::default(),
                 client_id:      String::default(),
             },
-            jwks_url:    JWKS_URL.to_string(),
+            jwks_url: JWKS_URL.to_string(),
+            client,
         }
     }
 }
@@ -136,9 +136,11 @@ impl TryFrom<String> for FirebaseAuth {
 impl FirebaseAuth {
     /// Create a new FirebaseAuth struct by providing Credentials
     pub fn new(credentials: Credentials) -> Self {
+        let client = reqwest::Client::new();
         Self {
             credentials,
             jwks_url: JWKS_URL.to_string(),
+            client,
         }
     }
 
@@ -210,6 +212,7 @@ impl FirebaseAuth {
         Self {
             credentials: self.credentials.clone(),
             jwks_url:    url.to_string(),
+            client:      self.client.clone(),
         }
     }
 
@@ -306,12 +309,12 @@ impl FirebaseAuth {
             |header| {
                 header
                     .kid
-                    .map(Kid::from)
                     .ok_or(AuthError::InvalidJwt(InvalidJwt::MissingKid))
             },
         )?;
 
-        let jwk = jwks(&self.jwks_url)
+        let jwk = self
+            .jwks()
             .and_then(|mut key_map| async move {
                 key_map.remove(&kid).ok_or(AuthError::InvalidJwt(
                     InvalidJwt::MatchingJwkNotFound,

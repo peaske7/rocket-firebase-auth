@@ -2,7 +2,7 @@
 
 use std::collections::HashMap;
 
-use crate::errors::AuthError;
+use crate::{auth::FirebaseAuth, errors::AuthError};
 use futures::TryFutureExt;
 use serde::{Deserialize, Serialize};
 
@@ -34,47 +34,27 @@ impl Jwk {
     }
 }
 
-/// A vector representation of the JWKs list we receive as a response from Google
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct KeysResponse {
-    pub keys: Vec<Jwk>,
-}
-
-/// A struct representation of the Kid for the Jwk
-#[derive(Eq, Hash, PartialEq, Debug)]
-pub struct Kid(String);
-
-impl Kid {
-    pub fn new(kid: &str) -> Self {
-        Self(kid.to_string())
+impl FirebaseAuth {
+    /// Fetches a list of JWKs
+    ///
+    /// The jwks_url endpoint (google identity kit by default) is called and is
+    /// expected to return a list of JWKs. The list is converted into a lookup table
+    /// for the Jwk by Kid.
+    pub(crate) async fn jwks(&self) -> Result<HashMap<String, Jwk>, AuthError> {
+        self.client
+            .get(&self.jwks_url)
+            .send()
+            .and_then(|resp| resp.json::<Vec<Jwk>>())
+            .map_ok(|keys_resp| {
+                keys_resp.into_iter().fold(
+                    HashMap::<String, Jwk>::new(),
+                    |mut key_map, jwk| {
+                        key_map.insert(jwk.kid.clone(), jwk);
+                        key_map
+                    },
+                )
+            })
+            .map_err(AuthError::from)
+            .await
     }
-}
-
-impl From<String> for Kid {
-    fn from(kid: String) -> Self {
-        Self(kid)
-    }
-}
-
-/// Fetches a list of JWKs
-///
-/// The jwks_url endpoint (google identity kit by default) is called and is
-/// expected to return a list of JWKs. The list is converted into a lookup table
-/// for the Jwk by Kid.
-pub(crate) async fn jwks(
-    jwks_url: &str,
-) -> Result<HashMap<Kid, Jwk>, AuthError> {
-    reqwest::get(jwks_url)
-        .and_then(|resp| resp.json::<KeysResponse>())
-        .map_ok(|keys_resp| {
-            keys_resp.keys.into_iter().fold(
-                HashMap::<Kid, Jwk>::new(),
-                |mut key_map, key| {
-                    key_map.insert(Kid::from(key.kid.clone()), key);
-                    key_map
-                },
-            )
-        })
-        .map_err(AuthError::from)
-        .await
 }
