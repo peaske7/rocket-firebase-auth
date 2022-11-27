@@ -137,6 +137,10 @@ projects](https://github.com/DrPoppyseed/rocket-firebase-auth/tree/main/examples
 
 Any contributions (PRs, Issues) are welcomed!
 
+# Questions
+
+If you have any questions, however trivial it may seem, please let me know via Issues. I will respond!
+
 ## License
 
 MIT
