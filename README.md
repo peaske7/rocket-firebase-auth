@@ -6,12 +6,12 @@
 
 Firebase Auth with Rocket, batteries included
 
-- __Tiny__: `rocket-firebase-auth` is tiny, with features allowing you to make it even tinier
-- __Does one thing well__: Encodes/decodes Firebase JWT tokens in Rocket apps, and that's it
+- **Tiny**: `rocket-firebase-auth` is tiny, with features allowing you to make it even tinier
+- **Does one thing well**: Encodes/decodes Firebase JWT tokens in Rocket apps, and that's it
 
 ## Getting started
 
-#### 1. Set Firebase service account keys as env variables
+### 1. Set Firebase service account keys as env variables
 
 If you haven't already, create a service account in Firebase for the Rocket backend
 you are creating. Generate a new private key and copy-paste the generated json
@@ -29,7 +29,7 @@ into a `firebase-credentials.json` file.
   "token_uri": "********",
   "auth_provider_x509_cert_url": "********",
   "client_x509_cert_url": "********"
-} 
+}
 ```
 
 Don't forget to add the `firebase-credentials.json` file to your `.gitignore`.
@@ -39,7 +39,7 @@ Don't forget to add the `firebase-credentials.json` file to your `.gitignore`.
 firebase-credentials.json
 ```
 
-#### 2. Create a `FirebaseAuth` instance and add to server state
+### 2. Create a `FirebaseAuth` instance and add to server state
 
 Add `rocket-firebase-auth` to your project.
 
@@ -73,7 +73,7 @@ async fn rocket() -> Rocket<Build> {
 }
 ```
 
-#### 3. Verify the token from the endpoint function
+### 3. Verify the token from the endpoint function
 
 On endpoints that we except to receive Authorization headers containing our encoded
 Firebase tokens from the client, we can add a field to the endpoint function.
@@ -133,11 +133,19 @@ For a more detailed example with a frontend example as well, checkout the [examp
 projects](https://github.com/DrPoppyseed/rocket-firebase-auth/tree/main/examples/react-rocket-example)
 .
 
+## Testing
+
+To run tests, run the following command:
+
+```bash
+cargo test -- --test-threads=1
+```
+
 ## Contribute
 
 Any contributions (PRs, Issues) are welcomed!
 
-# Questions
+## Questions
 
 If you have any questions, however trivial it may seem, please let me know via Issues. I will respond!
 
