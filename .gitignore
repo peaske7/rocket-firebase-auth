@@ -1,12 +1,14 @@
 # Rust build files
-/target
-/Cargo.lock
+target
+Cargo.lock
 
 # Used for testing
 !.env
 
 # IDE related files
-/.idea
+.idea
 rocket-firebase-auth.iml
-/.vscode
+.vscode
 !.vscode/settings
+
+.dccache
