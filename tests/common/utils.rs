@@ -36,11 +36,11 @@ pub static SCENARIOS: Lazy<HashMap<String, Scenario>> = Lazy::new(|| {
 #[allow(dead_code)]
 #[derive(Debug, Clone, Deserialize)]
 pub struct Scenario {
-    pub desc:            Option<String>,
-    pub token:           String,
-    pub jwk_n:           String,
-    pub kid:             String,
-    pub rsa_public_key:  Option<String>,
+    pub desc: Option<String>,
+    pub token: String,
+    pub jwk_n: String,
+    pub kid: String,
+    pub rsa_public_key: Option<String>,
     pub rsa_private_key: Option<String>,
 }
 
@@ -56,11 +56,11 @@ pub fn load_scenario(scenario_key: &str) -> Scenario {
 impl From<Scenario> for Jwk {
     fn from(scenario: Scenario) -> Self {
         Self {
-            e:   "AQAB".to_string(),
+            e: "AQAB".to_string(),
             alg: "RS256".to_string(),
             kty: "RSA".to_string(),
             kid: scenario.kid,
-            n:   scenario.jwk_n,
+            n: scenario.jwk_n,
         }
     }
 }

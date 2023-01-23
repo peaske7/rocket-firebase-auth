@@ -6,7 +6,7 @@ use crate::common::utils::{
     setup_mock_server,
     TEST_JWKS_URL,
 };
-use rocket_firebase_auth::{auth::FirebaseAuth, jwk::Jwk};
+use rocket_firebase_auth::{jwk::Jwk, FirebaseAuth};
 
 #[tokio::test]
 async fn should_succeed_with_env() {
@@ -19,12 +19,13 @@ async fn should_succeed_with_env() {
         .mount(&mock_server)
         .await;
 
-    let firebase_auth = FirebaseAuth::try_from_env("FIREBASE_CREDS")
-        .unwrap()
-        .set_jwks_url(TEST_JWKS_URL);
-    let decoded_token = firebase_auth
-        .verify_from_string(scenario.token.as_str())
-        .await;
+    let firebase_auth = FirebaseAuth::builder()
+        .env_file(".env", "FIREBASE_CREDS")
+        .jwks_url(TEST_JWKS_URL)
+        .build()
+        .unwrap();
+    let decoded_token =
+        firebase_auth.verify_token(scenario.token.as_str()).await;
 
     assert!(decoded_token.is_ok());
 
@@ -45,15 +46,13 @@ async fn should_succeed_with_env_with_filename() {
         .mount(&mock_server)
         .await;
 
-    let firebase_auth = FirebaseAuth::try_from_env_with_filename(
-        "./tests/env_files/.env.test",
-        "FIREBASE_CREDS",
-    )
-    .unwrap()
-    .set_jwks_url(TEST_JWKS_URL);
-    let decoded_token = firebase_auth
-        .verify_from_string(scenario.token.as_str())
-        .await;
+    let firebase_auth = FirebaseAuth::builder()
+        .env_file("./tests/env_files/.env.test", "FIREBASE_CREDS")
+        .jwks_url(TEST_JWKS_URL)
+        .build()
+        .unwrap();
+    let decoded_token =
+        firebase_auth.verify_token(scenario.token.as_str()).await;
 
     assert!(decoded_token.is_ok());
 
@@ -74,13 +73,13 @@ async fn should_succeed_with_json_file() {
         .mount(&mock_server)
         .await;
 
-    let firebase_auth =
-        FirebaseAuth::try_from_json_file("tests/env_files/firebase-creds.json")
-            .unwrap()
-            .set_jwks_url(TEST_JWKS_URL);
-    let decoded_token = firebase_auth
-        .verify_from_string(scenario.token.as_str())
-        .await;
+    let firebase_auth = FirebaseAuth::builder()
+        .json_file("tests/env_files/firebase-creds.json")
+        .jwks_url(TEST_JWKS_URL)
+        .build()
+        .unwrap();
+    let decoded_token =
+        firebase_auth.verify_token(scenario.token.as_str()).await;
 
     assert!(decoded_token.is_ok());
 

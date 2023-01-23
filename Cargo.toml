@@ -3,13 +3,13 @@ name = "rocket_firebase_auth"
 version = "0.2.4"
 edition = "2021"
 
-description = "Encode/Decode firebase tokens in rocket apps"
+description = "Encode/decode firebase tokens in rocket apps with ease"
 authors = ["Haruki Jay Shimada <peaske16180@gmail.com>"]
 repository = "https://github.com/DrPoppyseed/rocket-firebase-auth"
 
 license = "MIT"
 readme = "README.md"
-keywords = ["firebase", "rocket", "jsonwebtokens"]
+keywords = ["firebase", "rocket", "jsonwebtokens", "auth", "firebase-auth"]
 
 include = [
     "src/*",
@@ -33,7 +33,6 @@ encode = ["dep:chrono"]
 
 [dependencies]
 jsonwebtoken = { version = "8.2.0", features = ["use_pem"] }
-futures = "0.3.25"
 serde = { version = "1.0.152" }
 reqwest = { version = "0.11.14", features = ["json"] }
 rocket = { version = "0.5.0-rc.2", features = ["json"] }
@@ -48,3 +47,4 @@ wiremock = "0.5.17"
 tokio = { version = "1.24.2", features = ["full"] }
 toml = "0.5.11"
 once_cell = "1.17.0"
+futures = "0.3.25"

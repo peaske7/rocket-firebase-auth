@@ -2,7 +2,7 @@
 
 /// All rocket-firebase-auth errors are consolidated into the following AuthError
 #[derive(Debug)]
-pub enum AuthError {
+pub enum Error {
     /// Invalid JWT given
     InvalidJwt(InvalidJwt),
     /// Fail to fetch list of JWKs from issuer
@@ -52,14 +52,38 @@ pub enum Env {
     MissingEnvFile(String),
 }
 
-impl From<jsonwebtoken::errors::Error> for AuthError {
+impl From<jsonwebtoken::errors::Error> for Error {
     fn from(e: jsonwebtoken::errors::Error) -> Self {
-        AuthError::JsonWebTokenError(format!("Auth error occurred: {e}"))
+        Error::JsonWebTokenError(format!("Auth error occurred: {e}"))
     }
 }
 
-impl From<reqwest::Error> for AuthError {
+impl From<std::io::Error> for Error {
+    fn from(e: std::io::Error) -> Self {
+        Error::Env(Env::InvalidFileFormat(e.to_string()))
+    }
+}
+
+impl From<std::env::VarError> for Error {
+    fn from(e: std::env::VarError) -> Self {
+        Error::Env(Env::InvalidFirebaseCredentials(e.to_string()))
+    }
+}
+
+impl From<serde_json::Error> for Error {
+    fn from(e: serde_json::Error) -> Self {
+        Error::Env(Env::InvalidFileFormat(e.to_string()))
+    }
+}
+
+impl From<dotenvy::Error> for Error {
+    fn from(e: dotenvy::Error) -> Self {
+        Error::Env(Env::MissingEnvFile(e.to_string()))
+    }
+}
+
+impl From<reqwest::Error> for Error {
     fn from(e: reqwest::Error) -> Self {
-        AuthError::FetchFailed(format!("Auth error occurred: {e}"))
+        Error::FetchFailed(format!("Auth error occurred: {e}"))
     }
 }

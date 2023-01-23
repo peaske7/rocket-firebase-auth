@@ -7,21 +7,21 @@ use crate::common::utils::{
     TEST_JWKS_URL,
 };
 use rocket_firebase_auth::{
-    auth::FirebaseAuth,
-    errors::{AuthError, InvalidJwt},
+    errors::{Error, InvalidJwt},
+    FirebaseAuth,
 };
 
 #[tokio::test]
 async fn missing_kid() {
     let token_without_kid = load_scenario("missing_kid").token;
     let decoded_token = FirebaseAuth::default()
-        .verify_from_string(token_without_kid.as_str())
+        .verify_token(token_without_kid.as_str())
         .await;
 
     assert!(decoded_token.is_err());
     assert!(matches!(
         decoded_token.err().unwrap(),
-        AuthError::InvalidJwt(InvalidJwt::MissingKid)
+        Error::InvalidJwt(InvalidJwt::MissingKid)
     ));
 }
 
@@ -37,14 +37,16 @@ async fn missing_jwk() {
         .mount(&mock_server)
         .await;
 
-    let decoded_token = FirebaseAuth::default()
-        .set_jwks_url(TEST_JWKS_URL)
-        .verify_from_string(scenario.token.as_str())
+    let decoded_token = FirebaseAuth::builder()
+        .jwks_url(TEST_JWKS_URL)
+        .build()
+        .unwrap()
+        .verify_token(scenario.token.as_str())
         .await;
 
     assert!(decoded_token.is_err());
     assert!(matches!(
         decoded_token.err().unwrap(),
-        AuthError::InvalidJwt(InvalidJwt::MatchingJwkNotFound)
+        Error::InvalidJwt(InvalidJwt::MatchingJwkNotFound)
     ))
 }
