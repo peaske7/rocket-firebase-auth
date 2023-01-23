@@ -9,6 +9,88 @@ Firebase Auth with Rocket, batteries included
 - **Tiny**: `rocket-firebase-auth` is tiny, with features allowing you to make it even tinier
 - **Does one thing well**: Encodes/decodes Firebase JWT tokens in Rocket apps, and that's it
 
+## Upgrading from v2 to v3
+
+### 1. Switching to the builder pattern
+
+In v3, by following Rust's builder pattern, we have a more fluent client builder.
+
+__`try_from_env_with_filename` => `env_file`__
+
+```rust
+// v2 try_from_env_with_filename
+let firebase_auth = FirebaseAuth::try_from_env_with_filename(
+        ".env.test",
+        "FIREBASE_CREDS",
+    )
+    .unwrap();
+```
+
+```rust
+// v3 env_file
+let firebase_auth = FirebaseAuth::builder()
+    .env_file(
+        ".env.test",
+        "FIREBASE_CREDS",
+    )
+    .build()
+    .unwrap();
+```
+
+__`try_from_env` => `env`__
+
+```rust
+// v2 try_from_env
+let firebase_auth = FirebaseAuth::try_from_env(
+        "FIREBASE_CREDS",
+    )
+    .unwrap();
+```
+
+```rust
+// v3 env
+let firebase_auth = FirebaseAuth::builder()
+    .env("FIREBASE_CREDS")
+    .build()
+    .unwrap();
+```
+
+__`try_from_json_file` => `json_file`__
+
+```rust
+// v2 try_from_json_file
+let firebase_auth = FirebaseAuth::try_from_json_file("tests/env_files/firebase-creds.json")
+    .unwrap();
+```
+
+```rust
+// v3 json_file
+let firebase_auth = FirebaseAuth::builder()
+    .json_file("firebase-creds.json")
+    .build()
+    .unwrap();
+```
+
+### 2. Changes to imports
+
+We can change the imports for commonly used structs as follows
+
+```rust
+// v2
+use rocket_firebase_auth::{
+    auth::FirebaseAuth
+    bearer_token::BearerToken
+};
+```
+
+```rust
+// v3
+use rocket_firebase_auth::{
+    FirebaseAuth,
+    BearerToken
+}
+```
+
 ## Getting started
 
 ### 1. Set Firebase service account keys as env variables
@@ -44,7 +126,7 @@ firebase-credentials.json
 Add `rocket-firebase-auth` to your project.
 
 ```toml
-rocket_firebase_auth = "0.2.4"
+rocket_firebase_auth = "0.3.0"
 ```
 
 Now, you can create a `FirebaseAuth` struct by reading the json file with a helper
@@ -53,17 +135,19 @@ function included with the default import.
 ```rust
 use rocket::{routes, Build, Rocket};
 use rocket_firebase_auth::{
-    auth::FirebaseAuth
+    FirebaseAuth
 };
 
 struct ServerState {
-    pub auth: FirebaseAuth
+    auth: FirebaseAuth
 }
 
 #[rocket::launch]
 async fn rocket() -> Rocket<Build> {
-    let firebase_auth = FirebaseAuth::try_from_json_file("firebase-credentials.json")
-        .expect("Failed to read Firebase credentials");
+    let firebase_auth = FirebaseAuth::builder()
+        .json_file("firebase-credentials.json")
+        .build()
+        .unwrap();
 
     rocket::build()
         .mount("/", routes![hello_world])
@@ -81,29 +165,23 @@ Running the `Jwt::verify()` function will decode the token, where you can get th
 Firebase `uid`.
 
 ```rust
-use futures::TryFutureExt;
 use rocket::{get, http::Status, routes, Build, Rocket, State};
-use rocket_firebase_auth::{
-    auth::FirebaseAuth,
-    bearer_token::BearerToken,
-};
+use rocket_firebase_auth::{BearerToken, FirebaseAuth};
 
 struct ServerState {
-    pub auth: FirebaseAuth,
+    auth: FirebaseAuth,
 }
 
 // Example function that returns an `Ok` and prints the verified user's uid.
 // If the token is invalid, return with a `Forbidden` status code.
 #[get("/")]
 async fn hello_world(state: &State<ServerState>, token: BearerToken) -> Status {
-    match state
-        .auth
-        .verify(&token)                            // verify token
-        .map_ok(|decoded_token| decoded_token.uid) // extract uid from decoded token
-        .await
+    let token = state.auth.verify(&token).await; // verify token
+
+    match token // extract uid from decoded token
     {
-        Ok(uid) => {
-            println!("Authentication succeeded with uid={uid}");
+        Ok(token) => {
+            println!("Authentication succeeded with uid={}", token.uid);
             Status::Ok
         }
         Err(_) => {
@@ -115,9 +193,10 @@ async fn hello_world(state: &State<ServerState>, token: BearerToken) -> Status {
 
 #[rocket::launch]
 async fn rocket() -> Rocket<Build> {
-    let firebase_auth =
-        FirebaseAuth::try_from_json_file("firebase-credentials.json")
-            .expect("Failed to read Firebase credentials");
+    let firebase_auth = FirebaseAuth::builder()
+        .json_file("firebase-credentials.json")
+        .build()
+        .unwrap();
 
     rocket::build()
         .mount("/", routes![hello_world])
