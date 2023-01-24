@@ -1,16 +1,13 @@
-//! Encode/decode Firebase tokens in Rocket apps with ease
+//! # rocket-firebase-auth
 //!
-//! # Description
+//! The `rocket-firebase-auth` crate provides an easy, batteries included
+//! firebase authentication library for `Rocket`. The library is built for
+//! servers that use Firebase tokens as a means of authentication from the
+//! client.
 //!
-//! `rocket-firebase-auth` is a plug-and-play, batteries included firebase auth
-//! library that handles the encoding/decoding of Firebase tokens on Rocket
-//! servers.
-//! The library is built for servers that use Firebase tokens as a means of
-//! authentication from the client.
+//! ## Example
 //!
-//! # Example
-//!
-//! ```rust
+//! ```rust, no_run
 //! use rocket::{get, http::Status, routes, Build, Rocket, State};
 //! use rocket_firebase_auth::{BearerToken, FirebaseAuth};
 //!
@@ -52,13 +49,17 @@
 //! }
 //! ```
 //!
-//! # Features
+//! ## Optional Features
 //!
-//! `rocket-firebase-auth` has two features:
+//! By default `env` and `rocket` as included as features.
+//! The following are a list of [Cargo features][cargo-features] that can be
+//! enabled or disabled:
 //!
-//! `env`: Includes functions that helps in initializing Firebase Auth from dotenv files
-//!
-//! `encode`: Adds support for encoding tokens
+//! - **`env`**: Includes functions that helps in initializing Firebase Auth
+//!   from dotenv files
+//! - **`encode`**: Adds support for encoding tokens
+//! - **`rocket`**: Implements the FromRequest trait for `BearerToken`, so that
+//!   rocket endpoints can easily access the token as an input parameter.
 //!
 #![deny(
     missing_debug_implementations,
@@ -444,7 +445,7 @@ impl FirebaseAuth {
     ///
     /// # Examples
     ///
-    /// ```rust
+    /// ```rust, no_run
     /// use rocket::{get, State, response::status, http::Status};
     /// use rocket_firebase_auth::{
     ///     BearerToken,

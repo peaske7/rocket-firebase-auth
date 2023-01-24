@@ -22,7 +22,7 @@ include = [
 path = "src/lib.rs"
 
 [features]
-default = ["env"]
+default = ["env", "rocket"]
 
 ## Enables support for reading in the Firebase Credentials from dotenv
 ## and non-dotenv files.
@@ -31,12 +31,15 @@ env = ["dep:dotenvy", "dep:serde_json"]
 ## Enables support for encoding tokens on the backend
 encode = ["dep:chrono"]
 
+## Enables support for the implementation of the FromRequest trait in Rocket
+rocket = ["dep:rocket"]
+
 [dependencies]
 jsonwebtoken = { version = "8.2.0", features = ["use_pem"] }
 serde = { version = "1.0.152" }
 reqwest = { version = "0.11.14", features = ["json"] }
-rocket = { version = "0.5.0-rc.2", features = ["json"] }
 
+rocket = { version = "0.5.0-rc.2", features = ["json"], optional = true }
 dotenvy = { version = "0.15.6", optional = true }
 serde_json = { version = "1.0.91", optional = true }
 
