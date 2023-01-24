@@ -20,7 +20,7 @@ async fn should_succeed_with_env() {
         .await;
 
     let firebase_auth = FirebaseAuth::builder()
-        .env_file(".env", "FIREBASE_CREDS")
+        .env_file("tests/env_files/.env", "FIREBASE_CREDS")
         .jwks_url(TEST_JWKS_URL)
         .build()
         .unwrap();
@@ -47,7 +47,7 @@ async fn should_succeed_with_env_with_filename() {
         .await;
 
     let firebase_auth = FirebaseAuth::builder()
-        .env_file("./tests/env_files/.env.test", "FIREBASE_CREDS")
+        .env_file("tests/env_files/.env.test", "FIREBASE_CREDS")
         .jwks_url(TEST_JWKS_URL)
         .build()
         .unwrap();
