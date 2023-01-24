@@ -1,6 +1,6 @@
 use rocket::{Build, Rocket};
 use rocket_cors::{AllowedOrigins, CorsOptions};
-use rocket_firebase_auth::auth::FirebaseAuth;
+use rocket_firebase_auth::FirebaseAuth;
 use std::str::FromStr;
 
 mod api;
@@ -12,7 +12,9 @@ pub struct ServerState {
 
 #[rocket::launch]
 async fn rocket() -> Rocket<Build> {
-    let firebase_auth = FirebaseAuth::try_from_json_file("firebase-certs.json")
+    let firebase_auth = FirebaseAuth::builder()
+        .json_file("firebase-certs.json")
+        .build()
         .expect("Failed to read firebase credentials");
 
     // Setup cors

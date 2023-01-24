@@ -1,9 +1,9 @@
 use std::io::Cursor;
 
-use futures::TryFutureExt;
 use rocket::{
     get,
     http::{ContentType, Status},
+    post,
     response,
     routes,
     serde as rocket_serde,
@@ -12,13 +12,13 @@ use rocket::{
     Route,
     State,
 };
-use rocket_firebase_auth::bearer_token::BearerToken;
+use rocket_firebase_auth::BearerToken;
 use serde::Serialize;
 
 use crate::ServerState;
 
 pub fn routes() -> Vec<Route> {
-    routes![verify_token]
+    routes![verify_token, protected_endpoint]
 }
 
 /// The struct we return for success responses (200s)
@@ -63,23 +63,49 @@ pub struct VerifyTokenResponse {
     pub uid: String,
 }
 
-#[get("/verify")]
+#[post("/verify")]
 async fn verify_token(
     state: &State<ServerState>,
     token: BearerToken,
 ) -> Result<ApiResponse<VerifyTokenResponse>, ApiError> {
-    state
-        .auth
-        .verify(&token)
-        .map_ok(|decoded_token| ApiResponse {
-            json:   Some(rocket_serde::json::Json(VerifyTokenResponse {
-                uid: decoded_token.uid,
-            })),
-            status: Status::Ok,
-        })
-        .map_err(|_| ApiError {
-            error:  "Couldn't verify bearer token".to_string(),
-            status: Status::Unauthorized,
-        })
-        .await
+    let token = state.auth.verify(&token).await.map_err(|_| ApiError {
+        error:  "Couldn't verify bearer token".to_string(),
+        status: Status::Unauthorized,
+    })?;
+
+    let response = ApiResponse {
+        json:   Some(rocket_serde::json::Json(VerifyTokenResponse {
+            uid: token.uid,
+        })),
+        status: Status::Ok,
+    };
+
+    Ok(response)
+}
+
+#[derive(Debug, Serialize)]
+pub struct ProtectedEndpointResponse {
+    pub message: String,
+}
+
+#[get("/protected")]
+async fn protected_endpoint(
+    state: &State<ServerState>,
+    token: BearerToken,
+) -> Result<ApiResponse<ProtectedEndpointResponse>, ApiError> {
+    let token = state.auth.verify(&token).await.ok();
+
+    let message = match token {
+        Some(token) => format!("Hello, {}! You are signed in!", token.uid),
+        None => "Hello! You are not signed in!".to_string(),
+    };
+
+    let response = ApiResponse {
+        json:   Some(rocket_serde::json::Json(ProtectedEndpointResponse {
+            message,
+        })),
+        status: Status::Ok,
+    };
+
+    Ok(response)
 }

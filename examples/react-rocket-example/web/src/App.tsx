@@ -28,7 +28,7 @@ const useGoogleOAuth = () => async (): Promise<string | null> => {
     // Get the authenticated user's firebase Id token that we'll use as our bearer token
     const bearerToken = await authnedUser.user.getIdToken(true);
     return fetch(`${import.meta.env.VITE_BASE_URL}/verify`, {
-        method: "GET",
+        method: "POST",
         headers: {
             // Make a GET request with the `Authorization` header set with our bearer token
             Authorization: `Bearer ${bearerToken}`
