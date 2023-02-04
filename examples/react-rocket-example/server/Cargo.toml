@@ -5,11 +5,11 @@ edition = "2021"
 
 [dependencies]
 # serde ... to add serialization/deserialization of api structs
-serde = "1.0.147"
+serde = "1.0.152"
 # rocket ... 🚀
 rocket = { version = "0.5.0-rc.2", features = ["json"] }
 # rocket_cors ... we can set cors options ourselves, but I found using this crate 
 #   to be a more developer friendly experience.
 rocket_cors = { git = "https://github.com/lawliet89/rocket_cors", rev = "54fae0701dffbe5df686465780218644ee3fae5f" }
 # rocket_firebase_auth ... so we can use firebase tokens hassle-free!
-rocket_firebase_auth = "0.3.0"
+rocket_firebase_auth = "0.3.1"
