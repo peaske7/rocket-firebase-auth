@@ -1,6 +1,6 @@
 use once_cell::sync::Lazy;
 use rocket_firebase_auth::jwk::Jwk;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::{collections::HashMap, fs};
 use wiremock::{
@@ -65,10 +65,17 @@ impl From<Scenario> for Jwk {
     }
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+struct MockJwksResponse {
+    pub keys: Vec<Jwk>,
+}
+
 pub fn mock_jwk_issuer(jwks: &[Jwk]) -> Mock {
     Mock::given(method("GET"))
         .and(path("/jwks_url"))
-        .respond_with(
-            ResponseTemplate::new(200).set_body_json(json!(jwks.to_vec())),
-        )
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!(
+            MockJwksResponse {
+                keys: jwks.to_vec()
+            }
+        )))
 }
