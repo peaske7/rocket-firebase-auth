@@ -22,16 +22,25 @@ pub struct Jwk {
 }
 
 impl Jwk {
+    const EXPONENT: &str = "AQAB";
+    const ALGORITHM: &str = "RS256";
+    const KEY_TYPE: &str = "RSA";
+
     /// Creates a new Firebase Jwk with valid defaults
     pub fn new(kid: &str, n: &str) -> Self {
         Self {
-            e: "AQAB".to_string(),
-            alg: "RS256".to_string(),
-            kty: "RSA".to_string(),
+            e: Self::EXPONENT.to_string(),
+            alg: Self::ALGORITHM.to_string(),
+            kty: Self::KEY_TYPE.to_string(),
             kid: kid.to_string(),
             n: n.to_string(),
         }
     }
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct JwksResponse {
+    pub keys: Vec<Jwk>,
 }
 
 impl FirebaseAuth {
@@ -42,8 +51,8 @@ impl FirebaseAuth {
     /// for the Jwk by Kid.
     pub(crate) async fn jwks(&self) -> Result<HashMap<String, Jwk>, Error> {
         let response = self.client.get(&self.jwks_url).send().await?;
-        let jwks = response.json::<Vec<Jwk>>().await?;
-        let table = jwks.into_iter().fold(
+        let jwks: JwksResponse = response.json().await?;
+        let table = jwks.keys.into_iter().fold(
             HashMap::<String, Jwk>::new(),
             |mut key_map, jwk| {
                 key_map.insert(jwk.kid.clone(), jwk);
