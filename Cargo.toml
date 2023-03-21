@@ -35,18 +35,18 @@ encode = ["dep:chrono"]
 rocket = ["dep:rocket"]
 
 [dependencies]
-jsonwebtoken = { version = "8.2.0", features = ["use_pem"] }
-serde = { version = "1.0.152" }
-reqwest = { version = "0.11.14", features = ["json"] }
+jsonwebtoken = { version = "8.3.0", features = ["use_pem"] }
+serde = { version = "1.0.158" }
+reqwest = { version = "0.11.15", features = ["json"] }
 
 rocket = { version = "0.5.0-rc.2", features = ["json"], optional = true }
 dotenvy = { version = "0.15.6", optional = true }
-serde_json = { version = "1.0.91", optional = true }
+serde_json = { version = "1.0.94", optional = true }
 
 chrono = { version = "0.4", features = ["serde"], optional = true }
 
 [dev-dependencies]
 wiremock = "0.5.17"
-tokio = { version = "1.24.2", features = ["full"] }
-toml = "0.6.0"
-once_cell = "1.17.0"
+tokio = { version = "1.26.0", features = ["full"] }
+toml = "0.7.3"
+once_cell = "1.17.1"
