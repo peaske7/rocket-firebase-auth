@@ -14,6 +14,8 @@ pub enum Error {
     #[cfg(feature = "env")]
     /// Failures related to reading from environment variables
     Env(Env),
+    // FirebaseAuth state was not found, can't check validty of token
+    FirebaseAuthStateNotFound,
 }
 
 /// Errors around the contents of a decoded token
@@ -23,6 +25,8 @@ pub enum InvalidJwt {
     MissingKid,
     /// Jwk for a Kid could not be found
     MatchingJwkNotFound,
+    /// Unspecified invalid JWT error
+    Unspecified
 }
 
 /// Errors around invalid request headers and encoded tokens
