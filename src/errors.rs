@@ -14,7 +14,7 @@ pub enum Error {
     #[cfg(feature = "env")]
     /// Failures related to reading from environment variables
     Env(Env),
-    // FirebaseAuth state was not found, can't check validty of token
+    /// FirebaseAuth state was not found, can't check validty of token
     FirebaseAuthStateNotFound,
 }
 
