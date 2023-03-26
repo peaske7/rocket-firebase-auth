@@ -39,8 +39,8 @@ jsonwebtoken = { version = "8.3.0", features = ["use_pem"] }
 serde = { version = "1.0.158" }
 reqwest = { version = "0.11.15", features = ["json"] }
 
-rocket = { version = "0.5.0-rc.2", features = ["json"], optional = true }
-dotenvy = { version = "0.15.6", optional = true }
+rocket = { version = "0.5.0-rc.3", features = ["json"], optional = true }
+dotenvy = { version = "0.15.7", optional = true }
 serde_json = { version = "1.0.94", optional = true }
 
 chrono = { version = "0.4", features = ["serde"], optional = true }
