@@ -6,90 +6,8 @@
 
 Firebase Auth with Rocket, batteries included
 
-- **Tiny**: `rocket-firebase-auth` is tiny, with features allowing you to make it even tinier
-- **Does one thing well**: Encodes/decodes Firebase JWT tokens in Rocket apps, and that's it
-
-## Upgrading from v2 to v3
-
-### 1. Switching to the builder pattern
-
-In v3, by following Rust's builder pattern, we have a more fluent client builder.
-
-__`try_from_env_with_filename` => `env_file`__
-
-```rust
-// v2 try_from_env_with_filename
-let firebase_auth = FirebaseAuth::try_from_env_with_filename(
-        ".env.test",
-        "FIREBASE_CREDS",
-    )
-    .unwrap();
-```
-
-```rust
-// v3 env_file
-let firebase_auth = FirebaseAuth::builder()
-    .env_file(
-        ".env.test",
-        "FIREBASE_CREDS",
-    )
-    .build()
-    .unwrap();
-```
-
-__`try_from_env` => `env`__
-
-```rust
-// v2 try_from_env
-let firebase_auth = FirebaseAuth::try_from_env(
-        "FIREBASE_CREDS",
-    )
-    .unwrap();
-```
-
-```rust
-// v3 env
-let firebase_auth = FirebaseAuth::builder()
-    .env("FIREBASE_CREDS")
-    .build()
-    .unwrap();
-```
-
-__`try_from_json_file` => `json_file`__
-
-```rust
-// v2 try_from_json_file
-let firebase_auth = FirebaseAuth::try_from_json_file("tests/env_files/firebase-creds.json")
-    .unwrap();
-```
-
-```rust
-// v3 json_file
-let firebase_auth = FirebaseAuth::builder()
-    .json_file("firebase-creds.json")
-    .build()
-    .unwrap();
-```
-
-### 2. Changes to imports
-
-We can change the imports for commonly used structs as follows
-
-```rust
-// v2
-use rocket_firebase_auth::{
-    auth::FirebaseAuth
-    bearer_token::BearerToken
-};
-```
-
-```rust
-// v3
-use rocket_firebase_auth::{
-    FirebaseAuth,
-    BearerToken
-}
-```
+- __Tiny__: `rocket-firebase-auth` is tiny, with features allowing you to make it even tinier
+- __Does one thing well__: Encodes/decodes Firebase JWT tokens in Rocket apps, and that's it
 
 ## Getting started
 
@@ -203,6 +121,88 @@ async fn rocket() -> Rocket<Build> {
         .manage(ServerState {
             auth: firebase_auth,
         })
+}
+```
+
+## Upgrading from v2 to v3
+
+### 1. Switching to the builder pattern
+
+In v3, by following Rust's builder pattern, we have a more fluent client builder.
+
+__`try_from_env_with_filename` => `env_file`__
+
+```rust
+// v2 try_from_env_with_filename
+let firebase_auth = FirebaseAuth::try_from_env_with_filename(
+        ".env.test",
+        "FIREBASE_CREDS",
+    )
+    .unwrap();
+```
+
+```rust
+// v3 env_file
+let firebase_auth = FirebaseAuth::builder()
+    .env_file(
+        ".env.test",
+        "FIREBASE_CREDS",
+    )
+    .build()
+    .unwrap();
+```
+
+__`try_from_env` => `env`__
+
+```rust
+// v2 try_from_env
+let firebase_auth = FirebaseAuth::try_from_env(
+        "FIREBASE_CREDS",
+    )
+    .unwrap();
+```
+
+```rust
+// v3 env
+let firebase_auth = FirebaseAuth::builder()
+    .env("FIREBASE_CREDS")
+    .build()
+    .unwrap();
+```
+
+__`try_from_json_file` => `json_file`__
+
+```rust
+// v2 try_from_json_file
+let firebase_auth = FirebaseAuth::try_from_json_file("tests/env_files/firebase-creds.json")
+    .unwrap();
+```
+
+```rust
+// v3 json_file
+let firebase_auth = FirebaseAuth::builder()
+    .json_file("firebase-creds.json")
+    .build()
+    .unwrap();
+```
+
+### 2. Changes to imports
+
+We can change the imports for commonly used structs as follows
+
+```rust
+// v2
+use rocket_firebase_auth::{
+    auth::FirebaseAuth
+    bearer_token::BearerToken
+};
+```
+
+```rust
+// v3
+use rocket_firebase_auth::{
+    FirebaseAuth,
+    BearerToken
 }
 ```
 
