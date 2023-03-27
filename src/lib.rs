@@ -290,11 +290,11 @@ impl FirebaseAuthBuilder {
     /// # use rocket_firebase_auth::{FirebaseAdminCredentials, FirebaseAuth};
     /// #
     /// let credentials = FirebaseAdminCredentials::new(
-    ///     project_id: "my-project".to_string(),
-    ///     private_key_id: "my-private-key-id".to_string(),
-    ///     private_key: "my-private-key".to_string(),
-    ///     client_email: "my-client-email".to_string(),
-    ///     client_id: "my-client-id".to_string(),
+    ///     "my-project".to_string(),
+    ///     "my-private-key-id".to_string(),
+    ///     "my-private-key".to_string(),
+    ///     "my-client-email".to_string(),
+    ///     "my-client-id".to_string(),
     /// );
     ///
     /// let auth = FirebaseAuth::builder()
@@ -537,9 +537,9 @@ impl FirebaseAuth {
     ///     token: BearerToken
     /// ) -> Status
     /// {
-    ///     match state.auth.verify(&token).await {
+    ///     match state.auth.verify(token.as_str()).await {
     ///         Ok(decoded_token) => {
-    ///             println!("Valid token. uid: {}", decoded_token.uid);
+    ///             println!("Valid token. uid: {}", decoded_token.sub);
     ///             Status::Ok
     ///         }
     ///         Err(_) => {
