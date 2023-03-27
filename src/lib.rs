@@ -19,12 +19,12 @@
 //! // If the token is invalid, return with a `Forbidden` status code.
 //! #[get("/")]
 //! async fn hello_world(state: &State<ServerState>, token: BearerToken) -> Status {
-//!     let token = state.auth.verify(&token).await; // verify token
+//!     let token = state.auth.verify(token.as_str()).await; // verify token
 //!
 //!     match token // extract uid from decoded token
 //!     {
 //!         Ok(token) => {
-//!             println!("Authentication succeeded with uid={}", token.uid);
+//!             println!("Authentication succeeded with uid={}", token.sub);
 //!             Status::Ok
 //!         }
 //!         Err(_) => {
@@ -284,13 +284,11 @@ impl FirebaseAuthBuilder {
 
     /// Add credentials to the builder
     ///
-    ///
-    ///
     /// # Example
     ///
     /// ```rust
-    /// use rocket_firebase_auth::{FirebaseAdminCredentials, FirebaseAuth};
-    ///
+    /// # use rocket_firebase_auth::{FirebaseAdminCredentials, FirebaseAuth};
+    /// #
     /// let credentials = FirebaseAdminCredentials::new(
     ///     project_id: "my-project".to_string(),
     ///     private_key_id: "my-private-key-id".to_string(),
@@ -321,8 +319,8 @@ impl FirebaseAuthBuilder {
     /// # Example
     ///
     /// ```rust
-    /// use rocket_firebase_auth::FirebaseAuth;
-    ///
+    /// # use rocket_firebase_auth::FirebaseAuth;
+    /// #
     /// let auth = FirebaseAuth::builder()
     ///     .jwks_url("https://my-custom-jwks-url.com")
     ///     .build()
@@ -341,8 +339,8 @@ impl FirebaseAuthBuilder {
     /// # Example
     ///
     /// ```rust, no_run
-    /// use rocket_firebase_auth::FirebaseAuth;
-    ///
+    /// # use rocket_firebase_auth::FirebaseAuth;
+    /// #
     /// let auth = FirebaseAuth::builder()
     ///     .env("FIREBASE_CREDENTIALS")
     ///     .build()
@@ -366,8 +364,8 @@ impl FirebaseAuthBuilder {
     /// # Example
     ///
     /// ```rust, no_run
-    /// use rocket_firebase_auth::FirebaseAuth;
-    ///
+    /// # use rocket_firebase_auth::FirebaseAuth;
+    /// #
     /// let auth = FirebaseAuth::builder()
     ///     .env_file(".env", "FIREBASE_CREDENTIALS")
     ///     .build()
@@ -387,8 +385,8 @@ impl FirebaseAuthBuilder {
     /// # Example
     ///
     /// ```rust, no_run
-    /// use rocket_firebase_auth::FirebaseAuth;
-    ///
+    /// # use rocket_firebase_auth::FirebaseAuth;
+    /// #
     /// let auth = FirebaseAuth::builder()
     ///     .json_file("credentials.json")
     ///     .build()
@@ -412,8 +410,8 @@ impl FirebaseAuthBuilder {
     /// # Example
     ///
     /// ```rust, no_run
-    /// use rocket_firebase_auth::FirebaseAuth;
-    ///
+    /// # use rocket_firebase_auth::FirebaseAuth;
+    /// #
     /// let auth = FirebaseAuth::builder()
     ///     .build()
     ///     .unwrap();
@@ -481,11 +479,11 @@ impl FirebaseAuth {
     /// # Examples
     ///
     /// ```rust
-    /// use rocket_firebase_auth::{
-    ///     auth::FirebaseAuth,
-    ///     errors::AuthError
-    /// };
-    ///
+    /// # use rocket_firebase_auth::{
+    /// #    auth::FirebaseAuth,
+    /// #    errors::AuthError
+    /// # };
+    /// #
     /// async fn something(auth: &FirebaseAuth) {
     ///     let uid = "...";
     ///     let project_id = "...";
@@ -523,12 +521,12 @@ impl FirebaseAuth {
     /// # Examples
     ///
     /// ```rust, no_run
-    /// use rocket::{get, State, response::status, http::Status};
-    /// use rocket_firebase_auth::{
-    ///     BearerToken,
-    ///     FirebaseAuth
-    /// };
-    ///
+    /// # use rocket::{get, State, response::status, http::Status};
+    /// # use rocket_firebase_auth::{
+    /// #     BearerToken,
+    /// #     FirebaseAuth
+    /// # };
+    /// #
     /// struct ServerState {
     ///     auth: FirebaseAuth
     /// }
