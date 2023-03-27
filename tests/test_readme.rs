@@ -13,12 +13,12 @@ struct ServerState {
 #[cfg(feature = "rocket")]
 #[get("/")]
 async fn hello_world(state: &State<ServerState>, token: BearerToken) -> Status {
-    let token = state.auth.verify(&token).await; // verify token
+    let token = state.auth.verify(token.as_str()).await; // verify token
 
     match token // extract uid from decoded token
     {
         Ok(token) => {
-            println!("Authentication succeeded with uid={}", token.uid);
+            println!("Authentication succeeded with uid={}", token.sub);
             Status::Ok
         }
         Err(_) => {

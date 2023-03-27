@@ -24,15 +24,14 @@ async fn should_succeed_with_env() {
         .jwks_url(TEST_JWKS_URL)
         .build()
         .unwrap();
-    let decoded_token =
-        firebase_auth.verify_token(scenario.token.as_str()).await;
+    let decoded_token = firebase_auth.verify(scenario.token.as_str()).await;
 
     assert!(decoded_token.is_ok());
 
     let decoded_token = decoded_token.unwrap();
 
-    assert_eq!(decoded_token.uid, "some-uid");
-    assert!(decoded_token.expires_at > decoded_token.issued_at);
+    assert_eq!(decoded_token.sub, "some-uid");
+    assert!(decoded_token.exp > decoded_token.iat);
 }
 
 #[tokio::test]
@@ -51,15 +50,14 @@ async fn should_succeed_with_env_with_filename() {
         .jwks_url(TEST_JWKS_URL)
         .build()
         .unwrap();
-    let decoded_token =
-        firebase_auth.verify_token(scenario.token.as_str()).await;
+    let decoded_token = firebase_auth.verify(scenario.token.as_str()).await;
 
     assert!(decoded_token.is_ok());
 
     let decoded_token = decoded_token.unwrap();
 
-    assert_eq!(decoded_token.uid, "some-uid");
-    assert!(decoded_token.expires_at > decoded_token.issued_at);
+    assert_eq!(decoded_token.sub, "some-uid");
+    assert!(decoded_token.exp > decoded_token.iat);
 }
 
 #[tokio::test]
@@ -78,13 +76,12 @@ async fn should_succeed_with_json_file() {
         .jwks_url(TEST_JWKS_URL)
         .build()
         .unwrap();
-    let decoded_token =
-        firebase_auth.verify_token(scenario.token.as_str()).await;
+    let decoded_token = firebase_auth.verify(scenario.token.as_str()).await;
 
     assert!(decoded_token.is_ok());
 
     let decoded_token = decoded_token.unwrap();
 
-    assert_eq!(decoded_token.uid, "some-uid");
-    assert!(decoded_token.expires_at > decoded_token.issued_at);
+    assert_eq!(decoded_token.sub, "some-uid");
+    assert!(decoded_token.exp > decoded_token.iat);
 }
