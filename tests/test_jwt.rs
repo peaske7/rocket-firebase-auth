@@ -15,7 +15,7 @@ use rocket_firebase_auth::{
 async fn missing_kid() {
     let token_without_kid = load_scenario("missing_kid").token;
     let decoded_token = FirebaseAuth::default()
-        .verify_token(token_without_kid.as_str())
+        .verify(token_without_kid.as_str())
         .await;
 
     assert!(decoded_token.is_err());
@@ -41,7 +41,7 @@ async fn missing_jwk() {
         .jwks_url(TEST_JWKS_URL)
         .build()
         .unwrap()
-        .verify_token(scenario.token.as_str())
+        .verify(scenario.token.as_str())
         .await;
 
     assert!(decoded_token.is_err());
