@@ -73,8 +73,6 @@
 )]
 mod bearer_token;
 pub use bearer_token::BearerToken;
-mod firebase_token;
-pub use firebase_token::FirebaseToken;
 pub mod errors;
 pub mod jwk;
 pub mod plugins;
