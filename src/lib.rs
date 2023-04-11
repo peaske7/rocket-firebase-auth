@@ -19,12 +19,12 @@
 //! // If the token is invalid, return with a `Forbidden` status code.
 //! #[get("/")]
 //! async fn hello_world(state: &State<ServerState>, token: BearerToken) -> Status {
-//!     let token = state.auth.verify(&token).await; // verify token
+//!     let token = state.auth.verify(token.as_str()).await; // verify token
 //!
 //!     match token // extract uid from decoded token
 //!     {
 //!         Ok(token) => {
-//!             println!("Authentication succeeded with uid={}", token.uid);
+//!             println!("Authentication succeeded with uid={}", token.sub);
 //!             Status::Ok
 //!         }
 //!         Err(_) => {
@@ -95,20 +95,69 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "env")]
 use std::{env, fs::read_to_string};
 
-/// Endpoint to fetch JWKs when verifying firebase tokens
-pub static JWKS_URL: &str =
-    "https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com";
-
 /// The claims of a decoded JWT token used in firebase
-#[derive(Debug, Serialize, Deserialize)]
-pub struct Jwt {
+///
+/// Google's ID tokens conforms to [OIDC's specifications](https://openid.net/specs/openid-connect-core-1_0.html)
+/// (as per [docs](https://cloud.google.com/docs/authentication/token-types#id)).
+/// Some optional fields like `at_hash` are Google specific, so for more detail
+/// on those, see Google's [discovery page](https://developers.google.com/identity/openid-connect/openid-connect#discovery)
+/// for it's OpenID Connect support.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct FirebaseToken {
+    /// The audience of the token. The value of this claim must match the
+    /// application or service that uses the token to authenticate the request
     pub aud: String,
+    /// The issuer, or signer, of the token. For Google-signed ID tokens, this
+    /// value is https://accounts.google.com
+    pub iss: String,
+    /// Time the token was issued at in UNIX epoch. Must be in the past
     pub iat: u64,
+    /// Time the token is set to expire in UNIX epoch. Must be in the future.
     pub exp: u64,
+    /// User ID issued by Firebase
     pub sub: String,
+    /// Who the token was issued to
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub azp: Option<String>,
+    /// The user's email address. Provided only if your scope included the email
+    /// scope value
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub email: Option<String>,
+    /// True if the user's e-mail address has been verified; otherwise false
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub email_verified: Option<bool>,
+    /// The user's surname(s) or last name(s)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub family_name: Option<String>,
+    /// The user's given name(s) or first name(s)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub given_name: Option<String>,
+    /// Access token hash. See Google's discovery page for details
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub at_hash: Option<String>,
+    /// The domain associated with Google Cloud organization of the user
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub hd: Option<String>,
+    /// The user's locale, represented by a BCP47 language tag
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub locale: Option<String>,
+    /// The user's full name in a displayable form
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
+    /// The value of the nonce supplied by the app in the authentication request
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub nonce: Option<String>,
+    /// The URL of the user's profile picture
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub picture: Option<String>,
+    /// The URL of the user's profile page
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub profile: Option<String>,
 }
 
-impl Jwt {
+impl FirebaseToken {
+    pub const ISSUER_IDENTIFIER: &str = "https://accounts.google.com";
+
     /// Creates a new Jwt token
     ///
     /// The new token is created with a given Firebase `uid` and `project_id`.
@@ -119,7 +168,20 @@ impl Jwt {
             aud: project_id.to_string(),
             iat,
             exp: iat + (60 * 60),
+            iss: Self::ISSUER_IDENTIFIER.to_string(),
             sub: uid.to_string(),
+            azp: None,
+            email: None,
+            email_verified: None,
+            family_name: None,
+            given_name: None,
+            at_hash: None,
+            hd: None,
+            locale: None,
+            name: None,
+            nonce: None,
+            picture: None,
+            profile: None,
         }
     }
 }
@@ -129,36 +191,38 @@ impl Jwt {
 #[derive(Debug)]
 pub struct EncodedToken(pub String);
 
-/// The decoded Firebase JWT token with fields renamed to match Firebase's
-/// mapped values.
-///
-/// jwt.claims.iat => decoded_token.issued_at
-/// jwt.claims.exp => decoded_token.expires_at
-/// jwt.claims.sub => decoded_token.uid
-#[derive(Debug)]
-pub struct DecodedToken {
-    /// Time the token was issued at in UNIX epoch. Must be in the past
-    pub issued_at: u64,
-    /// Time the token is set to expire in UNIX epoch. Must be in the future.
-    pub expires_at: u64,
-    /// User ID issued by Firebase
-    pub uid: String,
-}
-
 /// A partial representation of firebase admin object provided by firebase.
 ///
 /// The fields in the firebase admin object is necessary when encoding and
 /// decoding tokens. All fields should be kept secret.
 #[derive(Debug, Clone, Deserialize, Default)]
-pub struct Credentials {
+pub struct FirebaseAdminCredentials {
     /// The project_id will be used as the `aud` in JWT tokens
-    pub project_id: String,
+    project_id: String,
     /// The private_key_id will be used as the `kid` in JWT tokens
-    pub private_key_id: String,
+    private_key_id: String,
     /// The private_key is the private RSA key used to sign the token
-    pub private_key: String,
-    pub client_email: String,
-    pub client_id: String,
+    private_key: String,
+    client_email: String,
+    client_id: String,
+}
+
+impl FirebaseAdminCredentials {
+    pub fn new(
+        project_id: String,
+        private_key_id: String,
+        private_key: String,
+        client_email: String,
+        client_id: String,
+    ) -> Self {
+        Self {
+            project_id,
+            private_key_id,
+            private_key,
+            client_email,
+            client_id,
+        }
+    }
 }
 
 /// Firebase Auth instance
@@ -169,7 +233,7 @@ pub struct Credentials {
 /// over the values used, specify as, for example, localhost to mock the response.
 #[derive(Debug, Clone)]
 pub struct FirebaseAuth {
-    pub(crate) credentials: Credentials,
+    pub(crate) admin_credentials: FirebaseAdminCredentials,
     pub jwks_url: String,
     pub(crate) client: reqwest::Client,
 }
@@ -178,8 +242,8 @@ impl Default for FirebaseAuth {
     fn default() -> Self {
         let client = reqwest::Client::new();
         Self {
-            credentials: Credentials::default(),
-            jwks_url: JWKS_URL.to_string(),
+            admin_credentials: FirebaseAdminCredentials::default(),
+            jwks_url: Self::JWKS_URL.to_string(),
             client,
         }
     }
@@ -199,7 +263,7 @@ pub enum EnvSource {
 
 #[derive(Debug, Clone)]
 pub struct FirebaseAuthBuilder {
-    credentials: Credentials,
+    admin_credentials: FirebaseAdminCredentials,
     jwks_url: String,
     env_source: EnvSource,
 }
@@ -207,8 +271,8 @@ pub struct FirebaseAuthBuilder {
 impl Default for FirebaseAuthBuilder {
     fn default() -> Self {
         Self {
-            credentials: Credentials::default(),
-            jwks_url: JWKS_URL.to_string(),
+            admin_credentials: FirebaseAdminCredentials::default(),
+            jwks_url: FirebaseAuth::JWKS_URL.to_string(),
             #[cfg(feature = "env")]
             env_source: EnvSource::Var,
         }
@@ -222,28 +286,29 @@ impl FirebaseAuthBuilder {
 
     /// Add credentials to the builder
     ///
-    ///
-    ///
     /// # Example
     ///
     /// ```rust
-    /// use rocket_firebase_auth::{Credentials, FirebaseAuth};
-    ///
-    /// let credentials = Credentials {
-    ///     project_id: "my-project".to_string(),
-    ///     private_key_id: "my-private-key-id".to_string(),
-    ///     private_key: "my-private-key".to_string(),
-    ///     client_email: "my-client-email".to_string(),
-    ///     client_id: "my-client-id".to_string(),
-    /// };
+    /// # use rocket_firebase_auth::{FirebaseAdminCredentials, FirebaseAuth};
+    /// #
+    /// let credentials = FirebaseAdminCredentials::new(
+    ///     "my-project".to_string(),
+    ///     "my-private-key-id".to_string(),
+    ///     "my-private-key".to_string(),
+    ///     "my-client-email".to_string(),
+    ///     "my-client-id".to_string(),
+    /// );
     ///
     /// let auth = FirebaseAuth::builder()
-    ///     .credentials(credentials)
+    ///     .admin_credentials(credentials)
     ///     .build()
     ///     .unwrap();
     /// ```
-    pub fn credentials(mut self, credentials: Credentials) -> Self {
-        self.credentials = credentials;
+    pub fn admin_credentials(
+        mut self,
+        admin_credentials: FirebaseAdminCredentials,
+    ) -> Self {
+        self.admin_credentials = admin_credentials;
         self
     }
 
@@ -256,8 +321,8 @@ impl FirebaseAuthBuilder {
     /// # Example
     ///
     /// ```rust
-    /// use rocket_firebase_auth::FirebaseAuth;
-    ///
+    /// # use rocket_firebase_auth::FirebaseAuth;
+    /// #
     /// let auth = FirebaseAuth::builder()
     ///     .jwks_url("https://my-custom-jwks-url.com")
     ///     .build()
@@ -276,8 +341,8 @@ impl FirebaseAuthBuilder {
     /// # Example
     ///
     /// ```rust, no_run
-    /// use rocket_firebase_auth::FirebaseAuth;
-    ///
+    /// # use rocket_firebase_auth::FirebaseAuth;
+    /// #
     /// let auth = FirebaseAuth::builder()
     ///     .env("FIREBASE_CREDENTIALS")
     ///     .build()
@@ -301,8 +366,8 @@ impl FirebaseAuthBuilder {
     /// # Example
     ///
     /// ```rust, no_run
-    /// use rocket_firebase_auth::FirebaseAuth;
-    ///
+    /// # use rocket_firebase_auth::FirebaseAuth;
+    /// #
     /// let auth = FirebaseAuth::builder()
     ///     .env_file(".env", "FIREBASE_CREDENTIALS")
     ///     .build()
@@ -322,8 +387,8 @@ impl FirebaseAuthBuilder {
     /// # Example
     ///
     /// ```rust, no_run
-    /// use rocket_firebase_auth::FirebaseAuth;
-    ///
+    /// # use rocket_firebase_auth::FirebaseAuth;
+    /// #
     /// let auth = FirebaseAuth::builder()
     ///     .json_file("credentials.json")
     ///     .build()
@@ -347,8 +412,8 @@ impl FirebaseAuthBuilder {
     /// # Example
     ///
     /// ```rust, no_run
-    /// use rocket_firebase_auth::FirebaseAuth;
-    ///
+    /// # use rocket_firebase_auth::FirebaseAuth;
+    /// #
     /// let auth = FirebaseAuth::builder()
     ///     .build()
     ///     .unwrap();
@@ -363,8 +428,10 @@ impl FirebaseAuthBuilder {
                 dotenvy::from_filename(file_path)?;
                 env::var(variable).map_err(Error::from).and_then(
                     |credentials| {
-                        serde_json::from_str::<Credentials>(&credentials)
-                            .map_err(Error::from)
+                        serde_json::from_str::<FirebaseAdminCredentials>(
+                            &credentials,
+                        )
+                        .map_err(Error::from)
                     },
                 )
             }
@@ -372,14 +439,16 @@ impl FirebaseAuthBuilder {
             EnvSource::Json(filepath) => read_to_string(filepath)
                 .map_err(Error::from)
                 .and_then(|credentials| {
-                    serde_json::from_str::<Credentials>(&credentials)
-                        .map_err(Error::from)
+                    serde_json::from_str::<FirebaseAdminCredentials>(
+                        &credentials,
+                    )
+                    .map_err(Error::from)
                 }),
-            _ => Ok(self.credentials),
+            _ => Ok(self.admin_credentials),
         }?;
 
         Ok(FirebaseAuth {
-            credentials,
+            admin_credentials: credentials,
             jwks_url: self.jwks_url,
             client: reqwest::Client::new(),
         })
@@ -387,11 +456,14 @@ impl FirebaseAuthBuilder {
 }
 
 impl FirebaseAuth {
+    /// Endpoint to fetch JWKs when verifying firebase tokens
+    pub const JWKS_URL: &str = "https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com";
+
     /// Create a new FirebaseAuth struct by providing Credentials
-    pub fn new(credentials: Credentials) -> Self {
+    pub fn new(credentials: FirebaseAdminCredentials) -> Self {
         Self {
-            credentials,
-            jwks_url: JWKS_URL.to_string(),
+            admin_credentials: credentials,
+            jwks_url: Self::JWKS_URL.to_string(),
             client: reqwest::Client::new(),
         }
     }
@@ -409,11 +481,11 @@ impl FirebaseAuth {
     /// # Examples
     ///
     /// ```rust
-    /// use rocket_firebase_auth::{
-    ///     auth::FirebaseAuth,
-    ///     errors::AuthError
-    /// };
-    ///
+    /// # use rocket_firebase_auth::{
+    /// #    auth::FirebaseAuth,
+    /// #    errors::AuthError
+    /// # };
+    /// #
     /// async fn something(auth: &FirebaseAuth) {
     ///     let uid = "...";
     ///     let project_id = "...";
@@ -423,15 +495,18 @@ impl FirebaseAuth {
     #[cfg(feature = "encode")]
     pub fn encode(&self, uid: &str) -> Result<EncodedToken, Error> {
         let header = Header {
-            kid: Some(self.credentials.private_key_id.clone()),
+            kid: Some(self.admin_credentials.private_key_id.clone()),
             ..Header::new(Algorithm::RS256)
         };
 
-        EncodingKey::from_rsa_pem(self.credentials.private_key.as_bytes())
+        EncodingKey::from_rsa_pem(self.admin_credentials.private_key.as_bytes())
             .and_then(|key| {
                 jsonwebtoken::encode(
                     &header,
-                    &Jwt::new(uid, &self.credentials.project_id),
+                    &FirebaseToken::new(
+                        uid,
+                        &self.admin_credentials.project_id,
+                    ),
                     &key,
                 )
             })
@@ -448,12 +523,12 @@ impl FirebaseAuth {
     /// # Examples
     ///
     /// ```rust, no_run
-    /// use rocket::{get, State, response::status, http::Status};
-    /// use rocket_firebase_auth::{
-    ///     BearerToken,
-    ///     FirebaseAuth
-    /// };
-    ///
+    /// # use rocket::{get, State, response::status, http::Status};
+    /// # use rocket_firebase_auth::{
+    /// #     BearerToken,
+    /// #     FirebaseAuth
+    /// # };
+    /// #
     /// struct ServerState {
     ///     auth: FirebaseAuth
     /// }
@@ -464,9 +539,9 @@ impl FirebaseAuth {
     ///     token: BearerToken
     /// ) -> Status
     /// {
-    ///     match state.auth.verify(&token).await {
+    ///     match state.auth.verify(token.as_str()).await {
     ///         Ok(decoded_token) => {
-    ///             println!("Valid token. uid: {}", decoded_token.uid);
+    ///             println!("Valid token. uid: {}", decoded_token.sub);
     ///             Status::Ok
     ///         }
     ///         Err(_) => {
@@ -476,24 +551,13 @@ impl FirebaseAuth {
     ///     }
     /// }
     /// ```
-    pub async fn verify(
-        &self,
-        token: &BearerToken,
-    ) -> Result<DecodedToken, Error> {
-        self.verify_token(token.as_str()).await
-    }
-
-    /// Verify Firebase Jwt token in string representation
-    pub async fn verify_token(
-        &self,
-        token: &str,
-    ) -> Result<DecodedToken, Error> {
+    pub async fn verify(&self, token: &str) -> Result<FirebaseToken, Error> {
         let mut validation = Validation::new(Algorithm::RS256);
         validation.set_issuer(&[format!(
             "https://securetoken.google.com/{}",
-            &self.credentials.project_id
+            &self.admin_credentials.project_id
         )]);
-        validation.set_audience(&[&self.credentials.project_id]);
+        validation.set_audience(&[&self.admin_credentials.project_id]);
 
         let kid =
             decode_header(token)
@@ -510,13 +574,9 @@ impl FirebaseAuth {
 
         DecodingKey::from_rsa_components(&jwk.n, &jwk.e)
             .and_then(|key| {
-                jsonwebtoken::decode::<Jwt>(token, &key, &validation)
+                jsonwebtoken::decode::<FirebaseToken>(token, &key, &validation)
             })
-            .map(|token_data| DecodedToken {
-                issued_at: token_data.claims.iat,
-                expires_at: token_data.claims.exp,
-                uid: token_data.claims.sub,
-            })
+            .map(|data| data.claims)
             .map_err(Error::from)
     }
 }
@@ -548,9 +608,9 @@ mod tests {
         let firebase_auth = FirebaseAuth::builder()
             .json_file("tests/env_files/firebase-creds.json")
             .jwks_url("some_dummy_value")
-            .build();
+            .build()
+            .unwrap();
 
-        assert!(firebase_auth.is_ok());
-        assert_eq!(firebase_auth.unwrap().jwks_url, "some_dummy_value");
+        assert_eq!(firebase_auth.jwks_url, "some_dummy_value");
     }
 }

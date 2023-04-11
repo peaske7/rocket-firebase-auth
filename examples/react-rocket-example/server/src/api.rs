@@ -6,7 +6,7 @@ use rocket::{
     post,
     response,
     routes,
-    serde as rocket_serde,
+    serde::json::Json,
     Request,
     Response,
     Route,
@@ -23,16 +23,17 @@ pub fn routes() -> Vec<Route> {
 
 /// The struct we return for success responses (200s)
 #[derive(Debug)]
-pub struct ApiResponse<T> {
-    pub json:   Option<rocket_serde::json::Json<T>>,
+pub struct ApiResponse<T>
+where
+    T: Serialize,
+{
+    pub json: Option<Json<T>>,
     pub status: Status,
 }
 
 /// Implements the `Responder` trait for Rocket, so we can simply return a for
 /// endpoint functions, result and Rocket takes care of the rest.
-impl<'r, T: rocket_serde::Serialize> response::Responder<'r, 'r>
-    for ApiResponse<T>
-{
+impl<'r, T: Serialize> response::Responder<'r, 'r> for ApiResponse<T> {
     fn respond_to(self, req: &'r Request) -> response::Result<'r> {
         Response::build_from(self.json.respond_to(req)?)
             .status(self.status)
@@ -44,7 +45,7 @@ impl<'r, T: rocket_serde::Serialize> response::Responder<'r, 'r>
 /// The struct we return for error responses (400s, 500s)
 #[derive(Debug)]
 pub struct ApiError {
-    pub error:  String,
+    pub error: String,
     pub status: Status,
 }
 
@@ -68,15 +69,18 @@ async fn verify_token(
     state: &State<ServerState>,
     token: BearerToken,
 ) -> Result<ApiResponse<VerifyTokenResponse>, ApiError> {
-    let token = state.auth.verify(&token).await.map_err(|_| ApiError {
-        error:  "Couldn't verify bearer token".to_string(),
-        status: Status::Unauthorized,
-    })?;
+    let token =
+        state
+            .auth
+            .verify(token.as_str())
+            .await
+            .map_err(|_| ApiError {
+                error: "Couldn't verify bearer token".to_string(),
+                status: Status::Unauthorized,
+            })?;
 
     let response = ApiResponse {
-        json:   Some(rocket_serde::json::Json(VerifyTokenResponse {
-            uid: token.uid,
-        })),
+        json: Some(Json(VerifyTokenResponse { uid: token.sub })),
         status: Status::Ok,
     };
 
@@ -93,17 +97,15 @@ async fn protected_endpoint(
     state: &State<ServerState>,
     token: BearerToken,
 ) -> Result<ApiResponse<ProtectedEndpointResponse>, ApiError> {
-    let token = state.auth.verify(&token).await.ok();
+    let token = state.auth.verify(token.as_str()).await.ok();
 
     let message = match token {
-        Some(token) => format!("Hello, {}! You are signed in!", token.uid),
+        Some(token) => format!("Hello, {}! You are signed in!", token.sub),
         None => "Hello! You are not signed in!".to_string(),
     };
 
     let response = ApiResponse {
-        json:   Some(rocket_serde::json::Json(ProtectedEndpointResponse {
-            message,
-        })),
+        json: Some(Json(ProtectedEndpointResponse { message })),
         status: Status::Ok,
     };
 

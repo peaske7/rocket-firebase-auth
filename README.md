@@ -6,40 +6,8 @@
 
 Firebase Auth with Rocket, batteries included
 
-- **Tiny**: `rocket-firebase-auth` is tiny, with features allowing you to make it even tinier
-- **Does one thing well**: Encodes/decodes Firebase JWT tokens in Rocket apps, and that's it
-
-## Quickstart:
-A Firebase service account key `.json` file is needed. You can grab yours from [here](https://console.firebase.google.com/project/_/settings/serviceaccounts/adminsdk).
-```rust
-#[macro_use]
-extern crate rocket;
-use rocket_firebase_auth::{FirebaseAuth, FirebaseToken};
-
-#[launch]
-async fn rocket() -> _ {
-    let firebase_auth = FirebaseAuth::builder()
-        .json_file("firebase_creds.json") // make sure this file exists
-        .build()
-        .unwrap();
-
-    rocket::build()
-        .manage(firebase_auth) // Add FirebaseAuth as a managed service
-        .mount("/", routes![handler])
-}
-
-#[get("/")]
-async fn handler(guard: FirebaseToken) -> String {
-    // Including the FirebaseToken guard is enough
-    // the handler will run only if the token is valid.
-    // The request guard won't work if FirebaseAuth state is not present. 
-    format!("Hello, you're logged in as user ID {}", guard.token.uid)
-}
-```
-This code is also avaiblable in `examples/simple-protected-endpoint`. Test it out with:
-```sh
-cargo run --example simple-protected-endpoint
-```
+- __Tiny__: `rocket-firebase-auth` is tiny, with features allowing you to make it even tinier
+- __Does one thing well__: Encodes/decodes Firebase JWT tokens in Rocket apps, and that's it
 
 ## Getting started
 
@@ -48,8 +16,6 @@ cargo run --example simple-protected-endpoint
 If you haven't already, create a service account in Firebase for the Rocket backend
 you are creating. Generate a new private key and copy-paste the generated json
 into a `firebase-credentials.json` file.
-
-You can get this json file [here](https://console.firebase.google.com/project/_/settings/serviceaccounts/adminsdk).
 
 ```json
 {
@@ -85,50 +51,76 @@ Now, you can create a `FirebaseAuth` struct by reading the json file with a help
 function included with the default import.
 
 ```rust
-#[macro_use]
-extern crate rocket;
-use rocket_firebase_auth::FirebaseAuth;
+use rocket::{routes, Build, Rocket};
+use rocket_firebase_auth::{
+    FirebaseAuth
+};
 
-#[launch]
-async fn rocket() -> _ {
+struct ServerState {
+    auth: FirebaseAuth
+}
+
+#[rocket::launch]
+async fn rocket() -> Rocket<Build> {
     let firebase_auth = FirebaseAuth::builder()
-        .json_file("firebase_creds.json") // make sure this file exists
+        .json_file("firebase-credentials.json")
         .build()
         .unwrap();
 
     rocket::build()
-        .manage(firebase_auth) // Add FirebaseAuth as a managed service
-        .mount("/", routes![handler])
+        .mount("/", routes![hello_world])
+        .manage(ServerState {
+            auth: firebase_auth
+        })
 }
 ```
 
-### 3. Include the `FirebaseToken` request guard
+### 3. Verify the token from the endpoint function
 
-There's no need to check token validity manually. Simply including the `FirebaseToken` request guard in the endpoint function is enough to reject any traffic with an invalid token with `403 Forbidden`. A missing or malformed token is also rejected.
+On endpoints that we except to receive Authorization headers containing our encoded
+Firebase tokens from the client, we can add a field to the endpoint function.
+Running the `Jwt::verify()` function will decode the token, where you can get the
+Firebase `uid`.
 
 ```rust
-#[macro_use]
-extern crate rocket;
-use rocket_firebase_auth::{FirebaseAuth, FirebaseToken};
+use rocket::{get, http::Status, routes, Build, Rocket, State};
+use rocket_firebase_auth::{BearerToken, FirebaseAuth};
 
-#[launch]
-async fn rocket() -> _ {
+struct ServerState {
+    auth: FirebaseAuth,
+}
+
+// Example function that returns an `Ok` and prints the verified user's uid.
+// If the token is invalid, return with a `Forbidden` status code.
+#[get("/")]
+async fn hello_world(state: &State<ServerState>, token: BearerToken) -> Status {
+    let token = state.auth.verify(&token).await; // verify token
+
+    match token // extract uid from decoded token
+    {
+        Ok(token) => {
+            println!("Authentication succeeded with uid={}", token.uid);
+            Status::Ok
+        }
+        Err(_) => {
+            println!("Authentication failed.");
+            Status::Forbidden
+        }
+    }
+}
+
+#[rocket::launch]
+async fn rocket() -> Rocket<Build> {
     let firebase_auth = FirebaseAuth::builder()
-        .json_file("firebase_creds.json") // make sure this file exists
+        .json_file("firebase-credentials.json")
         .build()
         .unwrap();
 
     rocket::build()
-        .manage(firebase_auth) // Add FirebaseAuth as a managed service
-        .mount("/", routes![handler])
-}
-
-#[get("/")]
-async fn handler(guard: FirebaseToken) -> String {
-    // Including the FirebaseToken guard is enough
-    // the handler will run only if the token is valid.
-    // The request guard won't work if FirebaseAuth state is not present. 
-    format!("Hello, you're logged in as user ID {}", guard.token.uid)
+        .mount("/", routes![hello_world])
+        .manage(ServerState {
+            auth: firebase_auth,
+        })
 }
 ```
 
