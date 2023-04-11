@@ -24,7 +24,7 @@ async fn rocket() -> Rocket<Build> {
         .unwrap();
 
     rocket::build()
-        .mount("/", routes![hello_world])
+        .mount("/", routes![handler])
         .manage(ServerState {
             auth: firebase_auth,
         })
