@@ -1,9 +1,14 @@
 //! Bridge with Rocket
 
 use crate::{
-    errors::{Error, InvalidAuthHeader, InvalidJwt}, FirebaseToken, FirebaseAuth,
+    errors::{Error, InvalidAuthHeader, InvalidJwt},
+    FirebaseAuth, FirebaseToken,
 };
-use rocket::{http::Status, request::{self, FromRequest}, Request};
+use rocket::{
+    http::Status,
+    request::{self, FromRequest},
+    Request,
+};
 
 /// Allows for direct access to bearer tokens as function parameters in rocket
 /// Try to convert an Authorization headers to a valid bearer token
@@ -11,7 +16,9 @@ use rocket::{http::Status, request::{self, FromRequest}, Request};
 impl<'r> FromRequest<'r> for FirebaseToken {
     type Error = Error;
 
-    async fn from_request(req: &'r Request<'_>) -> request::Outcome<Self, Self::Error> {
+    async fn from_request(
+        req: &'r Request<'_>,
+    ) -> request::Outcome<Self, Self::Error> {
         // Is header present?
         match req.headers().get_one("Authorization") {
             Some(header_raw) => {
@@ -33,9 +40,7 @@ impl<'r> FromRequest<'r> for FirebaseToken {
                         Some(auth) => match auth.verify(header_content).await {
                             Ok(t) => {
                                 // Token is valid
-                                let firebase_token = FirebaseToken {
-                                    ..t
-                                };
+                                let firebase_token = FirebaseToken { ..t };
                                 request::Outcome::Success(firebase_token)
                             }
                             Err(_) => {
@@ -46,7 +51,7 @@ impl<'r> FromRequest<'r> for FirebaseToken {
                                     Status::Unauthorized,
                                     Error::InvalidJwt(InvalidJwt::Unspecified),
                                 ))
-                            },
+                            }
                         },
                         // FirebaseAuth state not found
                         None => request::Outcome::Failure((
@@ -56,7 +61,10 @@ impl<'r> FromRequest<'r> for FirebaseToken {
                     }
                 }
             }
-            None => request::Outcome::Failure((Status::Unauthorized, Error::InvalidAuthHeader(InvalidAuthHeader::MissingAuthHeader))),
+            None => request::Outcome::Failure((
+                Status::Unauthorized,
+                Error::InvalidAuthHeader(InvalidAuthHeader::MissingAuthHeader),
+            )),
         }
     }
 }

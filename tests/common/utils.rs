@@ -5,9 +5,7 @@ use serde_json::json;
 use std::{collections::HashMap, fs};
 use wiremock::{
     matchers::{method, path},
-    Mock,
-    MockServer,
-    ResponseTemplate,
+    Mock, MockServer, ResponseTemplate,
 };
 
 pub static TEST_JWKS_URL: &str = "http://localhost:8888/jwks_url";

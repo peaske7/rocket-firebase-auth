@@ -12,7 +12,7 @@ struct ServerState {
 async fn handler(guard: FirebaseToken) -> String {
     // Including the FirebaseToken guard is enough
     // the handler will run only if the token is valid.
-    // The request guard won't work if FirebaseAuth state is not present. 
+    // The request guard won't work if FirebaseAuth state is not present.
     format!("Hello, you're logged in as user ID {}", guard.sub)
 }
 

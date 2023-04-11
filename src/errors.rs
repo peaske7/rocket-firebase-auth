@@ -26,7 +26,7 @@ pub enum InvalidJwt {
     /// Jwk for a Kid could not be found
     MatchingJwkNotFound,
     /// Unspecified invalid JWT error
-    Unspecified
+    Unspecified,
 }
 
 /// Errors around invalid request headers and encoded tokens
