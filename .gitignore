@@ -11,4 +11,6 @@ rocket-firebase-auth.iml
 .vscode
 !.vscode/settings
 
+.devcontainer
+
 .dccache
