@@ -1,34 +1,69 @@
 //! Bridge with Rocket
 
 use crate::{
-    bearer_token::BearerToken,
-    errors::{Error, InvalidAuthHeader},
+    errors::{Error, InvalidAuthHeader, InvalidJwt},
+    FirebaseAuth, FirebaseToken,
 };
-use rocket::{http::Status, outcome, outcome::IntoOutcome, request, Request};
+use rocket::{
+    http::Status,
+    request::{self, FromRequest},
+    Request,
+};
 
 /// Allows for direct access to bearer tokens as function parameters in rocket
+/// Try to convert an Authorization headers to a valid bearer token
 #[rocket::async_trait]
-impl<'r> request::FromRequest<'r> for BearerToken {
+impl<'r> FromRequest<'r> for FirebaseToken {
     type Error = Error;
 
     async fn from_request(
-        request: &'r Request<'_>,
+        req: &'r Request<'_>,
     ) -> request::Outcome<Self, Self::Error> {
-        match request
-            .headers()
-            .get("Authorization")
-            .collect::<Vec<&str>>()
-        {
-            auth_field if auth_field.is_empty() => outcome::Outcome::Failure((
-                Status::BadRequest,
-                Error::InvalidAuthHeader(InvalidAuthHeader::MissingAuthHeader),
-            )),
-            auth_field if auth_field.len() == 1 => {
-                auth_field[0].try_into().into_outcome(Status::BadRequest)
+        // Is header present?
+        match req.headers().get_one("Authorization") {
+            Some(header_raw) => {
+                let (header_name, header_content) = header_raw.split_at(7);
+                // Is header in the correct format?
+                if header_name != "Bearer " {
+                    request::Outcome::Failure((
+                        Status::Unauthorized,
+                        Error::InvalidAuthHeader(InvalidAuthHeader::InvalidFormat(
+                            "Authorization Header should have 2 arguments formatted as \
+                            `Bearer <token>`. Number of arguments did not match the \
+                            number of arguments expected.".to_string())
+                        ),
+                    ))
+                } else {
+                    // Find the FirebaseAuth state
+                    match req.rocket().state::<FirebaseAuth>() {
+                        // Verify if the token is valid
+                        Some(auth) => match auth.verify(header_content).await {
+                            Ok(t) => {
+                                // Token is valid
+                                let firebase_token = FirebaseToken { ..t };
+                                request::Outcome::Success(firebase_token)
+                            }
+                            Err(_) => {
+                                // TODO: Find a way to convert `e` into InvalidJwt error type
+                                // and replace `InvalidJwt::Unspecified` with it
+                                request::Outcome::Failure((
+                                    // Token is invalid
+                                    Status::Unauthorized,
+                                    Error::InvalidJwt(InvalidJwt::Unspecified),
+                                ))
+                            }
+                        },
+                        // FirebaseAuth state not found
+                        None => request::Outcome::Failure((
+                            Status::InternalServerError,
+                            Error::FirebaseAuthStateNotFound,
+                        )),
+                    }
+                }
             }
-            _ => outcome::Outcome::Failure((
-                Status::BadRequest,
-                Error::InvalidAuthHeader(InvalidAuthHeader::BadCount),
+            None => request::Outcome::Failure((
+                Status::Unauthorized,
+                Error::InvalidAuthHeader(InvalidAuthHeader::MissingAuthHeader),
             )),
         }
     }
