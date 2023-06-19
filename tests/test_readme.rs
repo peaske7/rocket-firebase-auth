@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use rocket::{get, routes, Build, Rocket};
 use rocket_firebase_auth::{FirebaseAuth, FirebaseToken};
 

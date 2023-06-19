@@ -67,6 +67,7 @@
     trivial_casts,
     trivial_numeric_casts,
     unsafe_code,
+    unused_imports,
     unstable_features,
     unused_import_braces,
     unused_qualifications
