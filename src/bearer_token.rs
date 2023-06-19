@@ -25,22 +25,19 @@ impl TryFrom<&str> for BearerToken {
 
     fn try_from(header: &str) -> Result<Self, Self::Error> {
         match header.trim().split(' ').collect::<Vec<&str>>() {
-            parts if parts[0].to_lowercase() != "bearer" =>
-                Err(Error::InvalidAuthHeader(
-                    InvalidAuthHeader::MissingBearer,
-                )),
-            parts if parts.len() != 2 =>
+            parts if parts[0].to_lowercase() != "bearer" => {
+                Err(Error::InvalidAuthHeader(InvalidAuthHeader::MissingBearer))
+            }
+            parts if parts.len() != 2 => {
                 Err(Error::InvalidAuthHeader(InvalidAuthHeader::InvalidFormat(
-                    "Authorization Header should have 2 arguments formatted as \
-                    `Bearer <token>`. Number of arguments did not match the \
-                    number of arguments expected.".to_string()
-                ))),
-            parts if parts[1].is_empty() =>
-                Err(Error::InvalidAuthHeader(
-                    InvalidAuthHeader::MissingBearerValue,
-                )),
-            parts  =>
-                Ok(BearerToken(parts[1].to_string()))
+                    "Authorization Header had invalid number of arguments."
+                        .to_string(),
+                )))
+            }
+            parts if parts[1].is_empty() => Err(Error::InvalidAuthHeader(
+                InvalidAuthHeader::MissingBearerValue,
+            )),
+            parts => Ok(BearerToken(parts[1].to_string())),
         }
     }
 }

@@ -1,6 +1,6 @@
 mod common;
 
-use crate::common::utils::{
+use crate::common::{
     load_scenario,
     mock_jwk_issuer,
     setup_mock_server,

@@ -1,7 +1,10 @@
 mod common;
 
-use crate::common::utils::{
-    load_scenario, mock_jwk_issuer, setup_mock_server, TEST_JWKS_URL,
+use crate::common::{
+    load_scenario,
+    mock_jwk_issuer,
+    setup_mock_server,
+    TEST_JWKS_URL,
 };
 use rocket_firebase_auth::{jwk::Jwk, FirebaseAuth};
 
