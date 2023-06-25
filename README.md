@@ -15,9 +15,7 @@ Firebase Auth with Rocket, batteries included
 
 If you haven't already, create a service account in Firebase for the Rocket backend
 you are creating. Generate a new private key and copy-paste the generated json
-into a `firebase-credentials.json` file.
-
-You can get this json file [here](https://console.firebase.google.com/project/_/settings/serviceaccounts/adminsdk).
+into a `firebase-credentials.json` file. It should look something like the json snippet below.
 
 ```json
 {
@@ -41,148 +39,49 @@ Don't forget to add the `firebase-credentials.json` file to your `.gitignore`.
 firebase-credentials.json
 ```
 
-### 2. Create a `FirebaseAuth` instance and add to server state
+### 2. Setup `FirebaseAuth` and get started
 
 Add `rocket-firebase-auth` to your project.
 
 ```toml
-rocket_firebase_auth = "0.3.0"
+rocket_firebase_auth = "0.4"
 ```
 
 Now, you can create a `FirebaseAuth` struct by reading the json file with a helper
 function included with the default import.
 
 ```rust
-#[macro_use]
-extern crate rocket;
-use rocket_firebase_auth::FirebaseAuth;
-
-#[launch]
-async fn rocket() -> _ {
-    let firebase_auth = FirebaseAuth::builder()
-        .json_file("firebase_creds.json") // make sure this file exists
-        .build()
-        .unwrap();
-
-    rocket::build()
-        .manage(firebase_auth) // Add FirebaseAuth as a managed service
-        .mount("/", routes![handler])
-}
-```
-
-### 3. Include the `FirebaseToken` request guard
-
-There's no need to check token validity manually. Simply including the `FirebaseToken` request guard in the endpoint function is enough to reject any traffic with an invalid token with `403 Forbidden`. A missing or malformed token is also rejected.
-
-```rust
-#[macro_use]
-extern crate rocket;
+use rocket::{get, http::Status, routes, Build, Rocket};
 use rocket_firebase_auth::{FirebaseAuth, FirebaseToken};
 
-#[launch]
-async fn rocket() -> _ {
-    let firebase_auth = FirebaseAuth::builder()
-        .json_file("firebase_creds.json") // make sure this file exists
-        .build()
-        .unwrap();
-
-    rocket::build()
-        .manage(firebase_auth) // Add FirebaseAuth as a managed service
-        .mount("/", routes![handler])
+// Setup the server state, which will include your FirebaseAuth instance, among
+// other things like the connection pool to your database.
+struct ServerState {
+    auth: FirebaseAuth,
 }
 
 #[get("/")]
-async fn handler(guard: FirebaseToken) -> String {
-    // Including the FirebaseToken guard is enough
-    // the handler will run only if the token is valid.
-    // The request guard won't work if FirebaseAuth state is not present. 
-    format!("Hello, you're logged in as user ID {}", guard.token.uid)
+async fn hello_world(token: FirebaseToken) -> Status {
+    println!("Authentication succeeded with uid={}", token.sub);
+    Status::Ok
+}
+
+#[rocket::launch]
+async fn rocket() -> Rocket<Build> {
+    let firebase_auth = FirebaseAuth::builder()
+        .json_file("firebase-credentials.json")
+        .build()
+        .unwrap();
+
+    rocket::build()
+        .mount("/", routes![hello_world])
+        .manage(ServerState {
+            auth: firebase_auth,
+        })
 }
 ```
 
-## Upgrading from v2 to v3
-
-### 1. Switching to the builder pattern
-
-In v3, by following Rust's builder pattern, we have a more fluent client builder.
-
-__`try_from_env_with_filename` => `env_file`__
-
-```rust
-// v2 try_from_env_with_filename
-let firebase_auth = FirebaseAuth::try_from_env_with_filename(
-        ".env.test",
-        "FIREBASE_CREDS",
-    )
-    .unwrap();
-```
-
-```rust
-// v3 env_file
-let firebase_auth = FirebaseAuth::builder()
-    .env_file(
-        ".env.test",
-        "FIREBASE_CREDS",
-    )
-    .build()
-    .unwrap();
-```
-
-__`try_from_env` => `env`__
-
-```rust
-// v2 try_from_env
-let firebase_auth = FirebaseAuth::try_from_env(
-        "FIREBASE_CREDS",
-    )
-    .unwrap();
-```
-
-```rust
-// v3 env
-let firebase_auth = FirebaseAuth::builder()
-    .env("FIREBASE_CREDS")
-    .build()
-    .unwrap();
-```
-
-__`try_from_json_file` => `json_file`__
-
-```rust
-// v2 try_from_json_file
-let firebase_auth = FirebaseAuth::try_from_json_file("tests/env_files/firebase-creds.json")
-    .unwrap();
-```
-
-```rust
-// v3 json_file
-let firebase_auth = FirebaseAuth::builder()
-    .json_file("firebase-creds.json")
-    .build()
-    .unwrap();
-```
-
-### 2. Changes to imports
-
-We can change the imports for commonly used structs as follows
-
-```rust
-// v2
-use rocket_firebase_auth::{
-    auth::FirebaseAuth
-    bearer_token::BearerToken
-};
-```
-
-```rust
-// v3
-use rocket_firebase_auth::{
-    FirebaseAuth,
-    BearerToken
-}
-```
-
-## Example project
+## Example projects
 
 For a more detailed example with a frontend example as well, checkout the [example
 projects](https://github.com/DrPoppyseed/rocket-firebase-auth/tree/main/examples/react-rocket-example)

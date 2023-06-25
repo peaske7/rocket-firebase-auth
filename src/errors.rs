@@ -1,7 +1,7 @@
 //! Error management for the library
 
 /// All rocket-firebase-auth errors are consolidated into the following AuthError
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum Error {
     /// Invalid JWT given
     InvalidJwt(InvalidJwt),
@@ -19,7 +19,7 @@ pub enum Error {
 }
 
 /// Errors around the contents of a decoded token
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum InvalidJwt {
     /// Kid is missing
     MissingKid,
@@ -30,7 +30,7 @@ pub enum InvalidJwt {
 }
 
 /// Errors around invalid request headers and encoded tokens
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum InvalidAuthHeader {
     /// Too many Authorization headers. Expects only 1
     BadCount,
@@ -46,7 +46,7 @@ pub enum InvalidAuthHeader {
 
 /// Errors that occur when reading environment variables
 #[cfg(feature = "env")]
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum Env {
     /// Invalid Firebase credentials given
     InvalidFirebaseCredentials(String),

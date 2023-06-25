@@ -1,20 +1,15 @@
 #![allow(dead_code)]
-use rocket::{get, routes, Build, Rocket};
+use rocket::{get, http::Status, routes, Build, Rocket};
 use rocket_firebase_auth::{FirebaseAuth, FirebaseToken};
 
 struct ServerState {
     auth: FirebaseAuth,
 }
 
-// Example function that returns an `Ok` and prints the verified user's uid.
-// If the token is invalid, return with a `Forbidden` status code.
-// No need to implement the logic on your own, including the guard is enough
 #[get("/")]
-async fn handler(guard: FirebaseToken) -> String {
-    // Including the FirebaseToken guard is enough
-    // the handler will run only if the token is valid.
-    // The request guard won't work if FirebaseAuth state is not present.
-    format!("Hello, you're logged in as user ID {}", guard.sub)
+async fn hello_world(token: FirebaseToken) -> Status {
+    println!("Authentication succeeded with uid={}", token.sub);
+    Status::Ok
 }
 
 #[rocket::launch]
@@ -25,7 +20,7 @@ async fn rocket() -> Rocket<Build> {
         .unwrap();
 
     rocket::build()
-        .mount("/", routes![handler])
+        .mount("/", routes![hello_world])
         .manage(ServerState {
             auth: firebase_auth,
         })

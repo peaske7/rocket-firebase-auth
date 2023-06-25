@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use crate::{errors::Error, FirebaseAuth};
 
 /// Represents the Jwk contents that is returned from Google's JWKs endpoint
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct Jwk {
     /// Base64 URL encoded string, public exponent
     pub e: String,
@@ -61,5 +61,25 @@ impl FirebaseAuth {
         );
 
         Ok(table)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_jwk_new() {
+        let actual_jwk = Jwk::new("test-kid", "test-n");
+
+        let desired_jwk = Jwk {
+            e: "AQAB".to_string(),
+            alg: "RS256".to_string(),
+            kty: "RSA".to_string(),
+            kid: "test-kid".to_string(),
+            n: "test-n".to_string(),
+        };
+
+        assert_eq!(actual_jwk, desired_jwk);
     }
 }

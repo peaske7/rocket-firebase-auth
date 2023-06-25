@@ -8,30 +8,17 @@
 //! ## Example
 //!
 //! ```rust, no_run
-//! use rocket::{get, http::Status, routes, Build, Rocket, State};
-//! use rocket_firebase_auth::{BearerToken, FirebaseAuth};
+//! use rocket::{get, http::Status, routes, Build, Rocket};
+//! use rocket_firebase_auth::{FirebaseAuth, FirebaseToken};
 //!
 //! struct ServerState {
 //!     auth: FirebaseAuth,
 //! }
 //!
-//! // Example function that returns an `Ok` and prints the verified user's uid.
-//! // If the token is invalid, return with a `Forbidden` status code.
 //! #[get("/")]
-//! async fn hello_world(state: &State<ServerState>, token: BearerToken) -> Status {
-//!     let token = state.auth.verify(token.as_str()).await; // verify token
-//!
-//!     match token // extract uid from decoded token
-//!     {
-//!         Ok(token) => {
-//!             println!("Authentication succeeded with uid={}", token.sub);
-//!             Status::Ok
-//!         }
-//!         Err(_) => {
-//!             println!("Authentication failed.");
-//!             Status::Forbidden
-//!         }
-//!     }
+//! async fn hello_world(token: FirebaseToken) -> Status {
+//!     println!("Authentication succeeded with uid={}", token.sub);
+//!     Status::Ok
 //! }
 //!
 //! #[rocket::launch]
@@ -197,13 +184,13 @@ pub struct EncodedToken(pub String);
 #[derive(Debug, Clone, Deserialize, Default)]
 pub struct FirebaseAdminCredentials {
     /// The project_id will be used as the `aud` in JWT tokens
-    project_id: String,
+    pub project_id: String,
     /// The private_key_id will be used as the `kid` in JWT tokens
-    private_key_id: String,
+    pub private_key_id: String,
     /// The private_key is the private RSA key used to sign the token
-    private_key: String,
-    client_email: String,
-    client_id: String,
+    pub private_key: String,
+    pub client_email: String,
+    pub client_id: String,
 }
 
 impl FirebaseAdminCredentials {
