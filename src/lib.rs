@@ -511,7 +511,7 @@ impl FirebaseAuth {
     /// ```rust, no_run
     /// # use rocket::{get, State, response::status, http::Status};
     /// # use rocket_firebase_auth::{
-    /// #     BearerToken,
+    /// #     FirebaseToken,
     /// #     FirebaseAuth
     /// # };
     /// #
@@ -521,20 +521,10 @@ impl FirebaseAuth {
     ///
     /// #[get("/")]
     /// async fn authenticated_route(
-    ///     state: &State<ServerState>,
-    ///     token: BearerToken
-    /// ) -> Status
-    /// {
-    ///     match state.auth.verify(token.as_str()).await {
-    ///         Ok(decoded_token) => {
-    ///             println!("Valid token. uid: {}", decoded_token.sub);
-    ///             Status::Ok
-    ///         }
-    ///         Err(_) => {
-    ///             println!("Invalid token.");
-    ///             Status::Forbidden
-    ///         }
-    ///     }
+    ///     token: FirebaseToken
+    /// ) -> Status {
+    ///     println!("Valid token. uid: {}", token.sub);
+    ///     Status::Ok
     /// }
     /// ```
     pub async fn verify(&self, token: &str) -> Result<FirebaseToken, Error> {
