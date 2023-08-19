@@ -11,12 +11,7 @@ license = "MIT"
 readme = "README.md"
 keywords = ["firebase", "rocket", "jsonwebtokens", "auth", "firebase-auth"]
 
-include = [
-    "src/*",
-    "./Cargo.toml",
-    "./LICENSE",
-    "./README.md"
-]
+include = ["src/*", "./Cargo.toml", "./LICENSE", "./README.md"]
 
 [lib]
 path = "src/lib.rs"

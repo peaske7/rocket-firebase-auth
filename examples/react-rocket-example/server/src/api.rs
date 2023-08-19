@@ -10,12 +10,9 @@ use rocket::{
     Request,
     Response,
     Route,
-    State,
 };
-use rocket_firebase_auth::BearerToken;
+use rocket_firebase_auth::FirebaseToken;
 use serde::Serialize;
-
-use crate::ServerState;
 
 pub fn routes() -> Vec<Route> {
     routes![verify_token, protected_endpoint]
@@ -66,25 +63,12 @@ pub struct VerifyTokenResponse {
 
 #[post("/verify")]
 async fn verify_token(
-    state: &State<ServerState>,
-    token: BearerToken,
-) -> Result<ApiResponse<VerifyTokenResponse>, ApiError> {
-    let token =
-        state
-            .auth
-            .verify(token.as_str())
-            .await
-            .map_err(|_| ApiError {
-                error: "Couldn't verify bearer token".to_string(),
-                status: Status::Unauthorized,
-            })?;
-
-    let response = ApiResponse {
+    token: FirebaseToken,
+) -> ApiResponse<VerifyTokenResponse> {
+    ApiResponse {
         json: Some(Json(VerifyTokenResponse { uid: token.sub })),
         status: Status::Ok,
-    };
-
-    Ok(response)
+    }
 }
 
 #[derive(Debug, Serialize)]
@@ -94,20 +78,12 @@ pub struct ProtectedEndpointResponse {
 
 #[get("/protected")]
 async fn protected_endpoint(
-    state: &State<ServerState>,
-    token: BearerToken,
-) -> Result<ApiResponse<ProtectedEndpointResponse>, ApiError> {
-    let token = state.auth.verify(token.as_str()).await.ok();
-
-    let message = match token {
-        Some(token) => format!("Hello, {}! You are signed in!", token.sub),
-        None => "Hello! You are not signed in!".to_string(),
-    };
-
-    let response = ApiResponse {
-        json: Some(Json(ProtectedEndpointResponse { message })),
+    token: FirebaseToken,
+) -> ApiResponse<ProtectedEndpointResponse> {
+    ApiResponse {
+        json: Some(Json(ProtectedEndpointResponse {
+            message: format!("Hello, {}! You are signed in!", token.sub),
+        })),
         status: Status::Ok,
-    };
-
-    Ok(response)
+    }
 }

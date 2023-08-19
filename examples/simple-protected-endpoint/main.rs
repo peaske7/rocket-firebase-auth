@@ -1,4 +1,3 @@
-#[macro_use]
 extern crate rocket;
 use rocket_firebase_auth::{FirebaseAuth, FirebaseToken};
 

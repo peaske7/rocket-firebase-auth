@@ -7,9 +7,7 @@ Cargo.lock
 
 # IDE related files
 .idea
-rocket-firebase-auth.iml
 .vscode
-!.vscode/settings
 
 .devcontainer
 

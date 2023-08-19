@@ -1,6 +1,6 @@
-import {getAuth, GoogleAuthProvider, onAuthStateChanged, signInWithPopup, signOut} from "firebase/auth";
-import {useEffect, useState} from "react";
-import {initializeApp} from "firebase/app";
+import { getAuth, GoogleAuthProvider, onAuthStateChanged, signInWithPopup, signOut } from "firebase/auth";
+import { useEffect, useState } from "react";
+import { initializeApp } from "firebase/app";
 
 // Set up the frontend firebase instance
 const firebaseConfig = {
