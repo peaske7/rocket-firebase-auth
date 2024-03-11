@@ -2,9 +2,7 @@
 
 use crate::{
     errors::{Error, InvalidAuthHeader, InvalidJwt},
-    BearerToken,
-    FirebaseAuth,
-    FirebaseToken,
+    BearerToken, FirebaseAuth, FirebaseToken,
 };
 use rocket::{
     http::Status,
@@ -17,9 +15,7 @@ use rocket::{
 impl<'r> FromRequest<'r> for FirebaseToken {
     type Error = Error;
 
-    async fn from_request(
-        request: &'r Request<'_>,
-    ) -> Outcome<Self, Self::Error> {
+    async fn from_request(request: &'r Request<'_>) -> Outcome<Self, Self::Error> {
         match (
             request
                 .headers()
@@ -30,17 +26,16 @@ impl<'r> FromRequest<'r> for FirebaseToken {
             (Some(bearer_token), Some(firebase_auth)) => {
                 match firebase_auth.verify(bearer_token.as_str()).await {
                     Ok(firebase_token) => Outcome::Success(firebase_token),
-                    Err(_) => Outcome::Failure((
+                    Err(_) => Outcome::Error((
                         Status::Unauthorized,
                         Error::InvalidJwt(InvalidJwt::Unspecified),
                     )),
                 }
             }
-            (Some(_), None) => Outcome::Failure((
-                Status::Unauthorized,
-                Error::FirebaseAuthStateNotFound,
-            )),
-            _ => Outcome::Failure((
+            (Some(_), None) => {
+                Outcome::Error((Status::Unauthorized, Error::FirebaseAuthStateNotFound))
+            }
+            _ => Outcome::Error((
                 Status::BadRequest,
                 Error::InvalidAuthHeader(InvalidAuthHeader::InvalidFormat(
                     "Failed to parse bearer token.".to_string(),

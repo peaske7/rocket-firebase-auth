@@ -191,8 +191,7 @@ async fn should_succeed_with_json_file() {
 #[tokio::test]
 async fn missing_kid() {
     let token_without_kid = SCENARIO_MISSING_KID.clone().token;
-    let decoded_token =
-        FirebaseAuth::default().verify(&token_without_kid).await;
+    let decoded_token = FirebaseAuth::default().verify(&token_without_kid).await;
 
     assert!(decoded_token.is_err());
     assert!(matches!(

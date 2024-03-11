@@ -142,7 +142,7 @@ pub struct FirebaseToken {
 }
 
 impl FirebaseToken {
-    pub const ISSUER_IDENTIFIER: &str = "https://accounts.google.com";
+    pub const ISSUER_IDENTIFIER: &'static str = "https://accounts.google.com";
 
     /// Creates a new Jwt token
     ///
@@ -290,10 +290,7 @@ impl FirebaseAuthBuilder {
     ///     .build()
     ///     .unwrap();
     /// ```
-    pub fn admin_credentials(
-        mut self,
-        admin_credentials: FirebaseAdminCredentials,
-    ) -> Self {
+    pub fn admin_credentials(mut self, admin_credentials: FirebaseAdminCredentials) -> Self {
         self.admin_credentials = admin_credentials;
         self
     }
@@ -405,33 +402,30 @@ impl FirebaseAuthBuilder {
     ///     .unwrap();
     /// ```
     pub fn build(self) -> Result<FirebaseAuth, Error> {
-        let credentials = match self.env_source {
-            #[cfg(feature = "env")]
-            EnvSource::Env {
-                file_path,
-                variable,
-            } => {
-                dotenvy::from_filename(file_path)?;
-                env::var(variable).map_err(Error::from).and_then(
-                    |credentials| {
-                        serde_json::from_str::<FirebaseAdminCredentials>(
-                            &credentials,
-                        )
+        let credentials =
+            match self.env_source {
+                #[cfg(feature = "env")]
+                EnvSource::Env {
+                    file_path,
+                    variable,
+                } => {
+                    dotenvy::from_filename(file_path)?;
+                    env::var(variable)
                         .map_err(Error::from)
-                    },
-                )
-            }
-            #[cfg(feature = "env")]
-            EnvSource::Json(filepath) => read_to_string(filepath)
-                .map_err(Error::from)
-                .and_then(|credentials| {
-                    serde_json::from_str::<FirebaseAdminCredentials>(
-                        &credentials,
-                    )
+                        .and_then(|credentials| {
+                            serde_json::from_str::<FirebaseAdminCredentials>(&credentials)
+                                .map_err(Error::from)
+                        })
+                }
+                #[cfg(feature = "env")]
+                EnvSource::Json(filepath) => read_to_string(filepath)
                     .map_err(Error::from)
-                }),
-            _ => Ok(self.admin_credentials),
-        }?;
+                    .and_then(|credentials| {
+                        serde_json::from_str::<FirebaseAdminCredentials>(&credentials)
+                            .map_err(Error::from)
+                    }),
+                _ => Ok(self.admin_credentials),
+            }?;
 
         Ok(FirebaseAuth {
             admin_credentials: credentials,
@@ -443,7 +437,8 @@ impl FirebaseAuthBuilder {
 
 impl FirebaseAuth {
     /// Endpoint to fetch JWKs when verifying firebase tokens
-    pub const JWKS_URL: &str = "https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com";
+    pub const JWKS_URL: &'static str =
+        "https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com";
 
     /// Create a new FirebaseAuth struct by providing Credentials
     pub fn new(credentials: FirebaseAdminCredentials) -> Self {
@@ -489,10 +484,7 @@ impl FirebaseAuth {
             .and_then(|key| {
                 jsonwebtoken::encode(
                     &header,
-                    &FirebaseToken::new(
-                        uid,
-                        &self.admin_credentials.project_id,
-                    ),
+                    &FirebaseToken::new(uid, &self.admin_credentials.project_id),
                     &key,
                 )
             })
@@ -535,12 +527,9 @@ impl FirebaseAuth {
         )]);
         validation.set_audience(&[&self.admin_credentials.project_id]);
 
-        let kid =
-            decode_header(token)
-                .map_err(Error::from)
-                .and_then(|header| {
-                    header.kid.ok_or(Error::InvalidJwt(InvalidJwt::MissingKid))
-                })?;
+        let kid = decode_header(token)
+            .map_err(Error::from)
+            .and_then(|header| header.kid.ok_or(Error::InvalidJwt(InvalidJwt::MissingKid)))?;
 
         let jwk = self.jwks().await.and_then(|mut key_map| {
             key_map
@@ -549,9 +538,7 @@ impl FirebaseAuth {
         })?;
 
         DecodingKey::from_rsa_components(&jwk.n, &jwk.e)
-            .and_then(|key| {
-                jsonwebtoken::decode::<FirebaseToken>(token, &key, &validation)
-            })
+            .and_then(|key| jsonwebtoken::decode::<FirebaseToken>(token, &key, &validation))
             .map(|data| data.claims)
             .map_err(Error::from)
     }

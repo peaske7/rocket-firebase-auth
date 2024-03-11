@@ -44,7 +44,7 @@ firebase-credentials.json
 Add `rocket-firebase-auth` to your project.
 
 ```toml
-rocket_firebase_auth = "0.4"
+rocket_firebase_auth = "0.5"
 ```
 
 Now, you can create a `FirebaseAuth` struct by reading the json file with a helper

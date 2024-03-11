@@ -22,9 +22,9 @@ pub struct Jwk {
 }
 
 impl Jwk {
-    const EXPONENT: &str = "AQAB";
-    const ALGORITHM: &str = "RS256";
-    const KEY_TYPE: &str = "RSA";
+    const EXPONENT: &'static str = "AQAB";
+    const ALGORITHM: &'static str = "RS256";
+    const KEY_TYPE: &'static str = "RSA";
 
     /// Creates a new Firebase Jwk with valid defaults
     pub fn new(kid: &str, n: &str) -> Self {
@@ -52,13 +52,13 @@ impl FirebaseAuth {
     pub(crate) async fn jwks(&self) -> Result<HashMap<String, Jwk>, Error> {
         let response = self.client.get(&self.jwks_url).send().await?;
         let jwks: JwksResponse = response.json().await?;
-        let table = jwks.keys.into_iter().fold(
-            HashMap::<String, Jwk>::new(),
-            |mut key_map, jwk| {
-                key_map.insert(jwk.kid.clone(), jwk);
-                key_map
-            },
-        );
+        let table =
+            jwks.keys
+                .into_iter()
+                .fold(HashMap::<String, Jwk>::new(), |mut key_map, jwk| {
+                    key_map.insert(jwk.kid.clone(), jwk);
+                    key_map
+                });
 
         Ok(table)
     }

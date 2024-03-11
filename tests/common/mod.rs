@@ -3,9 +3,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 use wiremock::{
     matchers::{method, path},
-    Mock,
-    MockServer,
-    ResponseTemplate,
+    Mock, MockServer, ResponseTemplate,
 };
 
 pub static TEST_JWKS_URL: &str = "http://localhost:8888/jwks_url";
@@ -23,9 +21,9 @@ struct MockJwksResponse {
 pub fn mock_jwk_issuer(jwks: &[Jwk]) -> Mock {
     Mock::given(method("GET"))
         .and(path("/jwks_url"))
-        .respond_with(ResponseTemplate::new(200).set_body_json(json!(
-            MockJwksResponse {
+        .respond_with(
+            ResponseTemplate::new(200).set_body_json(json!(MockJwksResponse {
                 keys: jwks.to_vec()
-            }
-        )))
+            })),
+        )
 }

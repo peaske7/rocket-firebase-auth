@@ -34,8 +34,7 @@ impl TryFrom<&str> for BearerToken {
             }
             parts if parts.len() != 2 => {
                 Err(Error::InvalidAuthHeader(InvalidAuthHeader::InvalidFormat(
-                    "Authorization Header had invalid number of arguments."
-                        .to_string(),
+                    "Authorization Header had invalid number of arguments.".to_string(),
                 )))
             }
             parts if parts[1].is_empty() => Err(Error::InvalidAuthHeader(
